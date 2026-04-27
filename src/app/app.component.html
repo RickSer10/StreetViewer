@@ -1,7 +1,18 @@
-<div class="flex h-screen w-full">
-  <app-sidebar></app-sidebar>
+<div class="flex h-screen w-full overflow-hidden">
+  <app-sidebar [collapsed]="collapsed"></app-sidebar>
 
-  <div class="flex-1 h-full">
-    <app-mapa></app-mapa>
+  <div class="flex-1 flex flex-col relative h-full">
+    <div class="relative flex items-center">
+      <button (click)="collapsed = !collapsed"
+        class="absolute -left-4 z-10 w-10 h-10 rounded-full bg-slate-800 border border-slate-600 text-slate-300 hover:text-white flex items-center justify-center shadow-md transition-all duration-300">
+        <i class="pi text-xs" [class.pi-chevron-right]="collapsed" [class.pi-chevron-left]="!collapsed"></i>
+      </button>
+    </div>
+
+    <div class="flex-1 h-full w-full">
+      <app-mapa></app-mapa>
+    </div>
+
+    <router-outlet />
   </div>
 </div>
