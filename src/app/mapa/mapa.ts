@@ -19,9 +19,8 @@ export class MapaComponent implements OnInit { // <-- Clase renombrada a 'Mapa'
 
     // Esperamos un poquito a que termine la animación de Tailwind y reajustamos el mapa
     setTimeout(() => {
-      // Necesitamos una referencia al mapa para esto,
-      // pero por ahora con que se mueva de esquina está perfecto.
-    }, 500);
+    window.dispatchEvent(new Event('resize'));
+  }, 550);
   }
 
   ngOnInit(): void {
