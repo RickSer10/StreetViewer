@@ -1,0 +1,31 @@
+<div class="flex h-screen">
+
+    <aside [class]="collapsed ? 'w-14' : 'w-56'"
+        class="bg-slate-800 transition-all duration-300 overflow-hidden flex flex-col py-3">
+
+        <button (click)="collapsed = !collapsed" class="text-slate-400 hover:text-white px-4 py-2 text-right">
+            <i class="pi" [class.pi-chevron-left]="!collapsed" [class.pi-chevron-right]="collapsed"></i>
+        </button>
+
+        <nav class="mt-2">
+            <a href="#"
+                class="flex items-center gap-3 px-4 py-2 text-slate-400 hover:bg-slate-700 hover:text-white whitespace-nowrap">
+                <i class="pi pi-home"></i><span>Inicio</span>
+            </a>
+            <a href="#"
+                class="flex items-center gap-3 px-4 py-2 text-slate-400 hover:bg-slate-700 hover:text-white whitespace-nowrap">
+                <i class="pi pi-user"></i><span>Perfil</span>
+            </a>
+            <a href="#"
+                class="flex items-center gap-3 px-4 py-2 text-slate-400 hover:bg-slate-700 hover:text-white whitespace-nowrap">
+                <i class="pi pi-cog"></i><span>Configuración</span>
+            </a>
+        </nav>
+
+    </aside>
+
+    <main class="flex-1 p-6 bg-slate-100">
+        <p>Contenido principal</p>
+    </main>
+
+</div>
