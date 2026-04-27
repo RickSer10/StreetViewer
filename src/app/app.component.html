@@ -1,9 +1,7 @@
-<div class="flex h-screen overflow-hidden bg-surface-950">
+<div class="flex h-screen w-full">
+  <app-sidebar></app-sidebar>
 
-  <app-sidebar />
-
-  <main class="flex-1 overflow-auto">
-    <router-outlet />
-  </main>
-
+  <div class="flex-1 h-full">
+    <app-mapa></app-mapa>
+  </div>
 </div>

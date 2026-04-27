@@ -8,7 +8,21 @@ import * as L from 'leaflet';
   templateUrl: './mapa.html', // <-- Apuntando a tu archivo corto
   styleUrl: './mapa.css'      // <-- Apuntando a tu archivo corto
 })
-export class Mapa implements OnInit { // <-- Clase renombrada a 'Mapa'
+export class MapaComponent implements OnInit { // <-- Clase renombrada a 'Mapa'
+
+  // 1. Añadimos esta variable
+  esMini = false;
+
+  // 2. Añadimos esta función
+  toggleMapa() {
+    this.esMini = !this.esMini;
+
+    // Esperamos un poquito a que termine la animación de Tailwind y reajustamos el mapa
+    setTimeout(() => {
+      // Necesitamos una referencia al mapa para esto,
+      // pero por ahora con que se mueva de esquina está perfecto.
+    }, 500);
+  }
 
   ngOnInit(): void {
     this.iniciarMapa();
@@ -49,5 +63,7 @@ export class Mapa implements OnInit { // <-- Clase renombrada a 'Mapa'
       }
       marcadorMovil.setLatLng(rutaExacta[pasoActual]);
     }, 1500);
+
+
   }
 }
