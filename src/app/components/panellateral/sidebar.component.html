@@ -1,31 +1,78 @@
-<div class="flex h-screen">
+<aside [class]="collapsed ? 'w-0 p-0' : 'w-80 p-3'"
+    class="bg-white-100 h-full transition-all duration-100 overflow-hidden flex flex-col gap-3 border-r border-gray-200">
 
-    <aside [class]="collapsed ? 'w-14' : 'w-56'"
-        class="bg-slate-800 transition-all duration-300 overflow-hidden flex flex-col py-3">
+    <!-- Header -->
+    <div class="bg-blue-600 rounded-lg px-4 py-3 shrink-0">
+        <p class="text-white font-semibold text-sm m-0">Visor 360° Geo-Espacial</p>
+        <p class="text-blue-200 text-xs mt-1 m-0">Interpolación por Eje de Vía + Planta</p>
+    </div>
 
-        <button (click)="collapsed = !collapsed" class="text-slate-400 hover:text-white px-4 py-2 text-right">
-            <i class="pi" [class.pi-chevron-left]="!collapsed" [class.pi-chevron-right]="collapsed"></i>
-        </button>
+    <!-- Paso 1 -->
+    <div class="flex flex-col gap-2">
+        <div class="flex items-center gap-2">
+            <span
+                class="w-5 h-5 rounded-full bg-blue-600 text-white text-[10px] font-medium flex items-center justify-center shrink-0">1</span>
+            <span class="font-medium text-sm text-gray-800">Cargar Base</span>
+        </div>
 
-        <nav class="mt-2">
-            <a href="#"
-                class="flex items-center gap-3 px-4 py-2 text-slate-400 hover:bg-slate-700 hover:text-white whitespace-nowrap">
-                <i class="pi pi-home"></i><span>Inicio</span>
-            </a>
-            <a href="#"
-                class="flex items-center gap-3 px-4 py-2 text-slate-400 hover:bg-slate-700 hover:text-white whitespace-nowrap">
-                <i class="pi pi-user"></i><span>Perfil</span>
-            </a>
-            <a href="#"
-                class="flex items-center gap-3 px-4 py-2 text-slate-400 hover:bg-slate-700 hover:text-white whitespace-nowrap">
-                <i class="pi pi-cog"></i><span>Configuración</span>
-            </a>
-        </nav>
+        <!-- Input Video -->
+        <div class="flex flex-col gap-1 pl-1">
+            <p class="text-xs text-gray-500 m-0">Video (.mp4 Equirrectangular / .lrv)</p>
+            <div class="flex items-center border border-gray-200 rounded-lg overflow-hidden">
+                <label
+                    class="bg-green-100 text-green-800 text-xs font-medium px-3 py-1.5 whitespace-nowrap border-r border-green-200 cursor-pointer hover:bg-green-200 transition-colors">
+                    Seleccionar archivo
+                    <input type="file" accept=".mp4,.lrv" class="hidden" (change)="onFileChange($event, 'video')">
+                </label>
+                <span class="text-xs text-gray-400 px-3 py-1.5 truncate">
+                    {{ videoFile?.name ?? 'Sin archivos seleccionados' }}
+                </span>
+            </div>
+        </div>
 
-    </aside>
+        <!-- Input KML Eje -->
+        <div class="flex flex-col gap-1 pl-1">
+            <p class="text-xs text-gray-500 m-0">Ruta Eje de Vía (.kml)</p>
+            <div class="flex items-center border border-gray-200 rounded-lg overflow-hidden">
+                <label
+                    class="bg-green-100 text-green-800 text-xs font-medium px-3 py-1.5 whitespace-nowrap border-r border-green-200 cursor-pointer hover:bg-green-200 transition-colors">
+                    Seleccionar archivo
+                    <input type="file" accept=".kml" class="hidden" (change)="onFileChange($event, 'eje')">
+                </label>
+                <span class="text-xs text-gray-400 px-3 py-1.5 truncate">
+                    {{ ejeFile?.name ?? 'Sin archivos seleccionados' }}
+                </span>
+            </div>
+        </div>
+    </div>
 
-    <main class="flex-1 p-6 bg-slate-100">
-        <p>Contenido principal</p>
-    </main>
+    <!-- Divisor -->
+    <div class="border-t border-gray-100"></div>
 
-</div>
+    <!-- Paso 2 -->
+    <div class="flex flex-col gap-2">
+        <div class="flex items-center gap-2">
+            <span
+                class="w-5 h-5 rounded-full bg-gray-100 border border-gray-200 text-gray-400 text-[10px] font-medium flex items-center justify-center shrink-0">2</span>
+            <span class="font-medium text-sm text-gray-800">Calibración de Postes</span>
+        </div>
+
+        <div class="border border-gray-100 rounded-lg p-3 bg-gray-50 flex flex-col gap-2">
+            <div>
+                <p class="text-xs font-medium text-gray-600 m-0">Cargar Postes de Referencia (.kml)</p>
+                <p class="text-[11px] text-gray-400 mt-0.5 m-0">Para máxima precisión, carga postes proyectados al eje.
+                </p>
+            </div>
+            <div
+                class="flex items-center border border-gray-100 rounded-lg overflow-hidden opacity-50 pointer-events-none">
+                <label
+                    class="bg-white text-gray-400 text-xs font-medium px-3 py-1.5 whitespace-nowrap border-r border-gray-100 cursor-not-allowed">
+                    Seleccionar archivo
+                    <input type="file" accept=".kml" class="hidden" disabled>
+                </label>
+                <span class="text-xs text-gray-300 px-3 py-1.5">Sin archivos seleccionados</span>
+            </div>
+        </div>
+    </div>
+
+</aside>
