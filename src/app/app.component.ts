@@ -12,6 +12,8 @@ import { CommonModule } from '@angular/common';
   styleUrl: './app.component.css'
 })
 export class AppComponent {
+[x: string]: any;
   title = 'StreetviewGM';
   collapsed = false;
+  esMini = false;
 }
