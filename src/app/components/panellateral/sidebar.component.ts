@@ -63,12 +63,14 @@ export class SidebarComponent implements OnInit {
       if (target === 'postes') {
         this.postesFileName = file.name;
         this.matrizGenerada = false;
-        this.postesList = [
-          { id: 7, time: '0.00', x: '587395.42', y: '8504073.80' },
-          { id: 8, time: '0.00', x: '587451.37', y: '8503956.16' },
-          { id: 9, time: '0.00', x: '587458.87', y: '8503937.30' },
-          { id: 10, time: '0.00', x: '587502.11', y: '8503910.45' }
-        ];
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const kmlText = e.target?.result as string;
+          this.postesList = this.geoService.extraerPostesDeKML(kmlText);
+          console.log(`✅ ¡KML de postes leído! Se encontraron ${this.postesList.length} registros.`);
+        };
+        reader.readAsText(file);
       }
     }
   }
@@ -78,8 +80,9 @@ export class SidebarComponent implements OnInit {
   }
 
   generarMatriz() {
-    const postesValidos = this.postesList.filter(p => p.time !== '0.00');
-    this.postesCalibradosCount = postesValidos.length;
+    // Si quisieras omitir los de tiempo 0.00, usas el filter.
+    // Como solo quieres verlos graficados, le pasamos TODOS:
+    this.postesCalibradosCount = this.postesList.length;
     this.matrizGenerada = true;
     this.matrizGeneradaEvent.emit(this.postesList);
   }

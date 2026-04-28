@@ -36,7 +36,6 @@ export class MapaComponent implements OnInit, AfterViewInit {
 
   private iniciarMapa(): void {
     this.mapa = L.map('mi-mapa').setView([-13.6186, -74.6547], 15);
-
     L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
       attribution: '&copy; OpenStreetMap &copy; CARTO',
       maxZoom: 20
@@ -51,7 +50,6 @@ export class MapaComponent implements OnInit, AfterViewInit {
       this.capaRuta.clearLayers();
       const doc = new DOMParser().parseFromString(kmlText, 'text/xml');
       const coordsTags = doc.getElementsByTagName("coordinates");
-
       let latlngs: L.LatLng[] = [];
 
       Array.from(coordsTags).forEach(tag => {
@@ -79,27 +77,37 @@ export class MapaComponent implements OnInit, AfterViewInit {
 
       this.capaRuta.addLayer(this.lineaRuta);
       this.mapa.fitBounds(this.lineaRuta.getBounds());
+      console.log("✅ Ruta dibujada correctamente.");
 
     } catch (err) {
-      console.error("Error KML:", err);
+      console.error("Error KML Eje:", err);
     }
   }
 
   dibujarPostes(postes: any[]) {
-    if (!this.lineaRuta) return;
+    console.log(`🔥 Recibida la orden de dibujar ${postes.length} postes.`);
+
+    if (!this.lineaRuta) {
+      console.warn("⚠️ No hay ruta cargada. Carga el Eje de Vía primero.");
+      return;
+    }
 
     this.capaPostes.clearLayers();
     const proyectados: any[] = [];
 
     postes.forEach(p => {
-      const [lat, lng] = this.convertUTMToLatLng(+p.x, +p.y);
-      if (isNaN(lat) || isNaN(lng)) return;
+      try {
+        const [lat, lng] = this.convertUTMToLatLng(+p.x, +p.y);
+        if (isNaN(lat) || isNaN(lng)) return;
 
-      const original = new L.LatLng(lat, lng);
-      const snapped = this.getClosestPointOnLine(original);
-      const dist = this.getDistanceAlongRoute(snapped);
+        const original = new L.LatLng(lat, lng);
+        const snapped = this.getClosestPointOnLine(original);
+        const dist = this.getDistanceAlongRoute(snapped);
 
-      proyectados.push({ ...p, latlng: snapped, dist });
+        proyectados.push({ ...p, latlng: snapped, dist });
+      } catch (err) {
+        console.error("Error proyectando poste:", p, err);
+      }
     });
 
     proyectados.sort((a, b) => a.dist - b.dist);
@@ -116,24 +124,27 @@ export class MapaComponent implements OnInit, AfterViewInit {
 
     if (proyectados.length > 0) {
       this.mapa.fitBounds(this.capaPostes.getBounds(), { padding: [50, 50] });
+      console.log("📍 Postes dibujados exitosamente.");
     }
   }
 
   moverMarcadorSimulado(x: number, y: number) {
     if(!this.utm) return;
-    const [lat, lng] = this.convertUTMToLatLng(x, y);
-    let punto = new L.LatLng(lat, lng);
+    try {
+      const [lat, lng] = this.convertUTMToLatLng(x, y);
+      let punto = new L.LatLng(lat, lng);
 
-    if (this.lineaRuta) {
-        punto = this.getClosestPointOnLine(punto);
-    }
+      if (this.lineaRuta) {
+          punto = this.getClosestPointOnLine(punto);
+      }
 
-    if (this.marcadorActual) {
-      this.mapa.removeLayer(this.marcadorActual);
-    }
+      if (this.marcadorActual) {
+        this.mapa.removeLayer(this.marcadorActual);
+      }
 
-    this.marcadorActual = L.marker(punto).addTo(this.mapa);
-    this.mapa.setView(punto, 17);
+      this.marcadorActual = L.marker(punto).addTo(this.mapa);
+      this.mapa.setView(punto, 17);
+    } catch(err) {}
   }
 
   private detectarZonaUTM(lon: number, lat: number) {
@@ -143,61 +154,42 @@ export class MapaComponent implements OnInit, AfterViewInit {
   }
 
   private convertUTMToLatLng(x: number, y: number): [number, number] {
-    const [lng, lat] = proj4.default(this.utm, this.wgs84, [x, y]);
+    // 🔥 Parche de seguridad
+    const proj4Fn = (proj4 as any).default || proj4;
+    const [lng, lat] = proj4Fn(this.utm, this.wgs84, [x, y]);
     return [lat, lng];
   }
 
+  // (Las funciones de matemáticas de snap se mantienen idénticas)
   private getClosestPointOnLine(p: L.LatLng): L.LatLng {
     const latlngs = this.lineaRuta!.getLatLngs() as L.LatLng[];
     let closest = p;
     let minDist = Infinity;
-
     for (let i = 0; i < latlngs.length - 1; i++) {
       const candidate = this.projectPointOnSegment(p, latlngs[i], latlngs[i + 1]);
       const dist = p.distanceTo(candidate);
-      if (dist < minDist) {
-        minDist = dist;
-        closest = candidate;
-      }
+      if (dist < minDist) { minDist = dist; closest = candidate; }
     }
     return closest;
   }
 
   private projectPointOnSegment(p: L.LatLng, p1: L.LatLng, p2: L.LatLng): L.LatLng {
-    const A = p.lng - p1.lng;
-    const B = p.lat - p1.lat;
-    const C = p2.lng - p1.lng;
-    const D = p2.lat - p1.lat;
-
-    const dot = A * C + B * D;
-    const lenSq = C * C + D * D;
-
-    let t = dot / lenSq;
-    t = Math.max(0, Math.min(1, t));
-
-    return new L.LatLng(
-      p1.lat + t * (p2.lat - p1.lat),
-      p1.lng + t * (p2.lng - p1.lng)
-    );
+    const A = p.lng - p1.lng; const B = p.lat - p1.lat;
+    const C = p2.lng - p1.lng; const D = p2.lat - p1.lat;
+    const dot = A * C + B * D; const lenSq = C * C + D * D;
+    let t = dot / lenSq; t = Math.max(0, Math.min(1, t));
+    return new L.LatLng(p1.lat + t * (p2.lat - p1.lat), p1.lng + t * (p2.lng - p1.lng));
   }
 
   private getDistanceAlongRoute(point: L.LatLng): number {
     const latlngs = this.lineaRuta!.getLatLngs() as L.LatLng[];
-    let total = 0;
-    let best = 0;
-    let minDist = Infinity;
-
+    let total = 0; let best = 0; let minDist = Infinity;
     for (let i = 0; i < latlngs.length - 1; i++) {
-      const p1 = latlngs[i];
-      const p2 = latlngs[i + 1];
+      const p1 = latlngs[i]; const p2 = latlngs[i + 1];
       const segDist = p1.distanceTo(p2);
       const proj = this.projectPointOnSegment(point, p1, p2);
       const d = point.distanceTo(proj);
-
-      if (d < minDist) {
-        minDist = d;
-        best = total + p1.distanceTo(proj);
-      }
+      if (d < minDist) { minDist = d; best = total + p1.distanceTo(proj); }
       total += segDist;
     }
     return best;
