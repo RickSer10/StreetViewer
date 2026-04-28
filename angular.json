@@ -27,7 +27,6 @@
             "styles": [
               "node_modules/@photo-sphere-viewer/core/index.css",
               "node_modules/@photo-sphere-viewer/video-plugin/index.css",
-              "node_modules/@photo-sphere-viewer/equirectangular-video-adapter/index.css",
               "node_modules/primeng/resources/themes/lara-light-blue/theme.css",
               "node_modules/primeng/resources/primeng.min.css",
               "node_modules/primeicons/primeicons.css",

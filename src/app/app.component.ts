@@ -25,6 +25,8 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   @ViewChild('sphereContainer') sphereContainerRef!: ElementRef;
 
   ngAfterViewInit() {
+    // Aquí es donde busca el video inicial. Como no lo tienes, lanza el aviso.
+    // Al subir un video desde el panel, se reemplaza.
     this.initViewer('assets/test_video.mp4');
   }
 
@@ -46,19 +48,12 @@ export class AppComponent implements AfterViewInit, OnDestroy {
 
     this.viewer.addEventListener('ready', () => {
       const videoPlugin = this.viewer!.getPlugin(VideoPlugin) as any;
-      console.log('plugin:', videoPlugin);
       const waitForVideo = setInterval(() => {
         if (videoPlugin.video) {
           clearInterval(waitForVideo);
-
           const videoEl: HTMLVideoElement = videoPlugin.video;
-
-          console.log('VIDEO LISTO', videoEl);
-
           videoEl.play();
-
           videoEl.addEventListener('timeupdate', () => {
-            console.log('TIME:', videoEl.currentTime);
             this.tiempoActual = videoEl.currentTime.toFixed(2);
           });
         }

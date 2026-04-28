@@ -1,16 +1,11 @@
-import { Component, Output, EventEmitter, Input, OnInit } from '@angular/core';
+import { Component, Output, EventEmitter, Input, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TabViewModule } from 'primeng/tabview';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
-
-interface Resultado {
-  desde: number;
-  hasta: number;
-  distancia: number;
-  velocidad: number;
-}
+import { GeoService } from '../../core/geo.service';
+import { PuntoGeo, Poste, TramoResultado } from '../../core/geo.interface';
 
 @Component({
   selector: 'app-sidebar',
@@ -18,15 +13,14 @@ interface Resultado {
   imports: [CommonModule, FormsModule, TabViewModule, TableModule, ButtonModule],
   templateUrl: './sidebar.component.html'
 })
+export class SidebarComponent implements OnInit {
 
-export class SidebarComponent implements OnInit{
-  ngOnInit(): void {
-    this.procesarDatos();
-  }
+  private geoService = inject(GeoService);
+
   @Input() tiempoActual: string = '0.00';
   @Output() videoSelected = new EventEmitter<File>();
   @Output() kmlSelected = new EventEmitter<File>();
-  @Output() matrizGeneradaEvent = new EventEmitter<any[]>();
+  @Output() matrizGeneradaEvent = new EventEmitter<Poste[]>();
   @Output() buscarUtmEvent = new EventEmitter<{ x: string, y: string, time: number }>();
 
   videoFileName: string = '';
@@ -34,18 +28,23 @@ export class SidebarComponent implements OnInit{
   postesFileName: string = '';
   puntosProcesados: number = 0;
   activeIndex = 0;
-  postesList: any[] = [];
+
+  postesList: Poste[] = [];
   matrizGenerada: boolean = false;
   postesCalibradosCount: number = 0;
   inputEste: string = '';
   inputNorte: string = '';
 
-  puntos = [
+  puntos: PuntoGeo[] = [
     { lat: -12.134585, lon: -75.220992 },
     { lat: -12.1345075, lon: -75.2209759 },
     { lat: -12.134426, lon: -75.220959 }
   ];
-  resultados: Resultado[] = [];
+  resultados: TramoResultado[] = [];
+
+  ngOnInit(): void {
+    this.resultados = this.geoService.calcularTramos(this.puntos);
+  }
 
   onFileChange(event: Event, target: 'video' | 'eje' | 'postes') {
     const input = event.target as HTMLInputElement;
@@ -74,7 +73,7 @@ export class SidebarComponent implements OnInit{
     }
   }
 
-  pegarTiempo(poste: any) {
+  pegarTiempo(poste: Poste) {
     poste.time = this.tiempoActual;
   }
 
@@ -90,45 +89,4 @@ export class SidebarComponent implements OnInit{
     const tiempoSalto = posteEncontrado ? parseFloat(posteEncontrado.time) : 0;
     this.buscarUtmEvent.emit({ x: this.inputEste, y: this.inputNorte, time: tiempoSalto });
   }
-
-  calcularDistancia(p1: any, p2: any): number {
-    const R = 6371000; // radio tierra en metros
-
-    const toRad = (x: number) => x * Math.PI / 180;
-
-    const dLat = toRad(p2.lat - p1.lat);
-    const dLon = toRad(p2.lon - p1.lon);
-
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(toRad(p1.lat)) * Math.cos(toRad(p2.lat)) *
-      Math.sin(dLon / 2) * Math.sin(dLon / 2);
-
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-    return R * c; // metros
-  }
-
-  procesarDatos() {
-    this.resultados = [];
-
-    for (let i = 1; i < this.puntos.length; i++) {
-      const p1 = this.puntos[i - 1];
-      const p2 = this.puntos[i];
-
-      const distancia = this.calcularDistancia(p1, p2); // metros
-      const tiempo = 4; // segundos (promedio)
-
-      const velocidad = distancia / tiempo; // m/s
-
-      this.resultados.push({
-        desde: i - 1,
-        hasta: i,
-        distancia: Number(distancia.toFixed(2)),
-        velocidad: Number(velocidad.toFixed(2))
-      });
-    }
-  }
-
-
 }

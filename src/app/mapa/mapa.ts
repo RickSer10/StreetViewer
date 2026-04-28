@@ -1,6 +1,6 @@
 import { Component, OnInit, AfterViewInit } from '@angular/core';
 import * as L from 'leaflet';
-import proj4 from 'proj4';
+import * as proj4 from 'proj4';
 
 @Component({
   selector: 'app-mapa',
@@ -18,10 +18,8 @@ import proj4 from 'proj4';
 export class MapaComponent implements OnInit, AfterViewInit {
 
   private mapa!: L.Map;
-
   private capaRuta = new L.FeatureGroup();
   private capaPostes = new L.FeatureGroup();
-
   private lineaRuta: L.Polyline | null = null;
   private marcadorActual: L.Marker | null = null;
 
@@ -36,7 +34,6 @@ export class MapaComponent implements OnInit, AfterViewInit {
     setTimeout(() => this.mapa.invalidateSize(), 100);
   }
 
-  // ---------------- MAPA ----------------
   private iniciarMapa(): void {
     this.mapa = L.map('mi-mapa').setView([-13.6186, -74.6547], 15);
 
@@ -49,11 +46,9 @@ export class MapaComponent implements OnInit, AfterViewInit {
     this.mapa.addLayer(this.capaPostes);
   }
 
-  // ---------------- KML (RUTA REAL) ----------------
   cargarKMLDinamico(kmlText: string): void {
     try {
       this.capaRuta.clearLayers();
-
       const doc = new DOMParser().parseFromString(kmlText, 'text/xml');
       const coordsTags = doc.getElementsByTagName("coordinates");
 
@@ -61,13 +56,11 @@ export class MapaComponent implements OnInit, AfterViewInit {
 
       Array.from(coordsTags).forEach(tag => {
         const coords = tag.textContent?.trim().split(/\s+/) || [];
-
         coords.forEach(c => {
           const parts = c.split(',');
           if (parts.length >= 2) {
             const lon = parseFloat(parts[0]);
             const lat = parseFloat(parts[1]);
-
             if (!isNaN(lat) && !isNaN(lon)) {
               latlngs.push(new L.LatLng(lat, lon));
             }
@@ -75,12 +68,8 @@ export class MapaComponent implements OnInit, AfterViewInit {
         });
       });
 
-      if (latlngs.length === 0) {
-        console.error("❌ KML sin coordenadas");
-        return;
-      }
+      if (latlngs.length === 0) return;
 
-      // 🔥 detectar zona UTM automáticamente
       this.detectarZonaUTM(latlngs[0].lng, latlngs[0].lat);
 
       this.lineaRuta = L.polyline(latlngs, {
@@ -89,61 +78,31 @@ export class MapaComponent implements OnInit, AfterViewInit {
       });
 
       this.capaRuta.addLayer(this.lineaRuta);
-
       this.mapa.fitBounds(this.lineaRuta.getBounds());
-
-      console.log("✅ Ruta cargada:", latlngs.length, "puntos");
 
     } catch (err) {
       console.error("Error KML:", err);
     }
   }
 
-  // ---------------- DETECTAR UTM ----------------
-  private detectarZonaUTM(lon: number, lat: number) {
-    const zone = Math.floor((lon + 180) / 6) + 1;
-    const south = lat < 0;
-
-    this.utm = `+proj=utm +zone=${zone} ${south ? '+south' : ''} +datum=WGS84 +units=m +no_defs`;
-
-    console.log("🌍 UTM detectado:", this.utm);
-  }
-
-  // ---------------- POSTES ----------------
   dibujarPostes(postes: any[]) {
-  console.log("🔥 dibujarPostes ejecutado");
-  console.log("📦 postes:", postes);
+    if (!this.lineaRuta) return;
 
-  if (!this.lineaRuta) {
-    console.warn("⚠️ Ruta no cargada");
-    return;
-  }
-
-  this.capaPostes.clearLayers();
-
+    this.capaPostes.clearLayers();
     const proyectados: any[] = [];
 
     postes.forEach(p => {
       const [lat, lng] = this.convertUTMToLatLng(+p.x, +p.y);
-
       if (isNaN(lat) || isNaN(lng)) return;
 
       const original = new L.LatLng(lat, lng);
-
       const snapped = this.getClosestPointOnLine(original);
       const dist = this.getDistanceAlongRoute(snapped);
 
-      proyectados.push({
-        ...p,
-        latlng: snapped,
-        dist
-      });
+      proyectados.push({ ...p, latlng: snapped, dist });
     });
 
-    // 🔥 ordenar
     proyectados.sort((a, b) => a.dist - b.dist);
-
-    console.log("📍 Postes proyectados:", proyectados.length);
 
     proyectados.forEach((p, i) => {
       L.circleMarker(p.latlng, {
@@ -152,9 +111,7 @@ export class MapaComponent implements OnInit, AfterViewInit {
         color: "#fff",
         weight: 2,
         fillOpacity: 1
-      })
-        .addTo(this.capaPostes)
-        .bindPopup(`Poste ${i + 1}`);
+      }).addTo(this.capaPostes).bindPopup(`Poste ${i + 1}`);
     });
 
     if (proyectados.length > 0) {
@@ -162,29 +119,47 @@ export class MapaComponent implements OnInit, AfterViewInit {
     }
   }
 
-  // ---------------- CONVERSION ----------------
+  moverMarcadorSimulado(x: number, y: number) {
+    if(!this.utm) return;
+    const [lat, lng] = this.convertUTMToLatLng(x, y);
+    let punto = new L.LatLng(lat, lng);
+
+    if (this.lineaRuta) {
+        punto = this.getClosestPointOnLine(punto);
+    }
+
+    if (this.marcadorActual) {
+      this.mapa.removeLayer(this.marcadorActual);
+    }
+
+    this.marcadorActual = L.marker(punto).addTo(this.mapa);
+    this.mapa.setView(punto, 17);
+  }
+
+  private detectarZonaUTM(lon: number, lat: number) {
+    const zone = Math.floor((lon + 180) / 6) + 1;
+    const south = lat < 0;
+    this.utm = `+proj=utm +zone=${zone} ${south ? '+south' : ''} +datum=WGS84 +units=m +no_defs`;
+  }
+
   private convertUTMToLatLng(x: number, y: number): [number, number] {
-    const [lng, lat] = proj4(this.utm, this.wgs84, [x, y]);
+    const [lng, lat] = proj4.default(this.utm, this.wgs84, [x, y]);
     return [lat, lng];
   }
 
-  // ---------------- SNAP ----------------
   private getClosestPointOnLine(p: L.LatLng): L.LatLng {
     const latlngs = this.lineaRuta!.getLatLngs() as L.LatLng[];
-
     let closest = p;
     let minDist = Infinity;
 
     for (let i = 0; i < latlngs.length - 1; i++) {
       const candidate = this.projectPointOnSegment(p, latlngs[i], latlngs[i + 1]);
       const dist = p.distanceTo(candidate);
-
       if (dist < minDist) {
         minDist = dist;
         closest = candidate;
       }
     }
-
     return closest;
   }
 
@@ -206,10 +181,8 @@ export class MapaComponent implements OnInit, AfterViewInit {
     );
   }
 
-  // ---------------- DISTANCIA SOBRE RUTA ----------------
   private getDistanceAlongRoute(point: L.LatLng): number {
     const latlngs = this.lineaRuta!.getLatLngs() as L.LatLng[];
-
     let total = 0;
     let best = 0;
     let minDist = Infinity;
@@ -217,9 +190,7 @@ export class MapaComponent implements OnInit, AfterViewInit {
     for (let i = 0; i < latlngs.length - 1; i++) {
       const p1 = latlngs[i];
       const p2 = latlngs[i + 1];
-
       const segDist = p1.distanceTo(p2);
-
       const proj = this.projectPointOnSegment(point, p1, p2);
       const d = point.distanceTo(proj);
 
@@ -227,25 +198,8 @@ export class MapaComponent implements OnInit, AfterViewInit {
         minDist = d;
         best = total + p1.distanceTo(proj);
       }
-
       total += segDist;
     }
-
     return best;
-  }
-
-  // ---------------- MARCADOR ----------------
-  moverMarcadorSimulado(x: number, y: number) {
-    const [lat, lng] = this.convertUTMToLatLng(x, y);
-    let punto = new L.LatLng(lat, lng);
-
-    punto = this.getClosestPointOnLine(punto);
-
-    if (this.marcadorActual) {
-      this.mapa.removeLayer(this.marcadorActual);
-    }
-
-    this.marcadorActual = L.marker(punto).addTo(this.mapa);
-    this.mapa.setView(punto, 17);
   }
 }

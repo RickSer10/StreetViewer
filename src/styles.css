@@ -2,6 +2,8 @@
 @import "primeng/resources/themes/lara-light-blue/theme.css";
 @import "primeng/resources/primeng.min.css";
 @import "primeicons/primeicons.css";
+@import '@photo-sphere-viewer/core/index.css';
+@import 'leaflet/dist/leaflet.css';
 
 @tailwind base;
 @tailwind components;
