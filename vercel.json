@@ -1,0 +1,6 @@
+{
+  "outputDirectory": "dist/street-viewer-gm",
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}
