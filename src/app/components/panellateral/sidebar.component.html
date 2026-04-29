@@ -12,9 +12,12 @@
                 <div class="flex items-center gap-3 mb-4">
                     <span
                         class="bg-gray-200 text-gray-700 rounded-full w-6 h-6 flex items-center justify-center text-[12px] font-bold shadow-sm">1</span>
-                    <h2 class="font-bold text-[14px] text-gray-800">Cargar Base</h2>
+                    <h2 class="font-bold text-[14px] text-gray-800">Cargar Datos iniciales</h2>
                 </div>
-
+                <p-calendar [(ngModel)]="fecha" dateFormat="dd/mm/yy" [showIcon]="true"
+                    placeholder="Selecciona una fecha" />
+                <p-calendar [(ngModel)]="hora" [showTime]="true" hourFormat="24">
+                </p-calendar>
                 <label class="block text-[11px] font-semibold text-gray-500 mb-1">Video (.mp4 Equirectangular /
                     .lrv)</label>
                 <input type="file" #fileVideo class="hidden" accept=".mp4,.lrv"
@@ -152,17 +155,16 @@
         </p-tabPanel>
         <p-tabPanel header="Exportar">
             <div class="p-3 border-b border-gray-100">
-                <h2 class="font-bold text-[14px] text-gray-800 mb-3">Exportar desde API</h2>
                 <div class="grid grid-cols-2 gap-2">
-                    <button (click)="exportarGpx()" [disabled]="!ejeFile || exportandoGpx"
+                    <!--<button (click)="exportarGpx()" [disabled]="!ejeFile || exportandoGpx"
                         class="w-full text-white font-bold text-[12px] py-2 rounded shadow transition-all"
                         [ngClass]="!ejeFile || exportandoGpx ? 'bg-[#93c5fd] cursor-not-allowed' : 'bg-[#2563eb] hover:bg-blue-700 cursor-pointer'">
                         {{ exportandoGpx ? 'Exportando...' : 'Exportar GPX' }}
-                    </button>
+                    </button>-->
                     <button (click)="exportarCsvPostes()" [disabled]="postesList.length === 0 || exportandoCsv"
                         class="w-full text-white font-bold text-[12px] py-2 rounded shadow transition-all"
                         [ngClass]="postesList.length === 0 || exportandoCsv ? 'bg-[#86efac] cursor-not-allowed' : 'bg-[#16a34a] hover:bg-green-700 cursor-pointer'">
-                        {{ exportandoCsv ? 'Exportando...' : 'Exportar CSV Postes' }}
+                        {{ exportandoCsv ? 'Exportando...' : 'Exportar CSV' }}
                     </button>
                 </div>
             </div>

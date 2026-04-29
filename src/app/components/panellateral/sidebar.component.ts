@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { TabViewModule } from 'primeng/tabview';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
+import { Calendar, CalendarModule } from 'primeng/calendar';
 import { HttpErrorResponse } from '@angular/common/http';
 import { GeoService } from '../../core/geo.service';
 import { PuntoGeo, Poste, TramoResultado } from '../../core/geo.interface';
@@ -22,7 +23,7 @@ interface PosteCalibracion extends Poste {
 @Component({
   selector: 'app-sidebar',
   standalone: true,
-  imports: [CommonModule, FormsModule, TabViewModule, TableModule, ButtonModule],
+  imports: [CommonModule, FormsModule, TabViewModule, TableModule, ButtonModule,CalendarModule],
   templateUrl: './sidebar.component.html'
 })
 export class SidebarComponent implements OnInit {
@@ -42,6 +43,7 @@ export class SidebarComponent implements OnInit {
   postesFileName: string = '';
   puntosProcesados: number = 0;
   activeIndex = 0;
+  
 
   postesList: PosteCalibracion[] = [];
   matrizGenerada: boolean = false;
@@ -52,6 +54,8 @@ export class SidebarComponent implements OnInit {
   exportandoGpx = false;
   exportandoCsv = false;
   asistiendoCalibracion = false;
+  fecha: Date | null = null;
+  hora: Date | null = null;
 
   rutaGenerada: PuntoMatriz[] = [];
   tramosRuta: Array<{ tramo: string; distancia_m: number; velocidad_m_s: number }> = [];
