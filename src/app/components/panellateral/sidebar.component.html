@@ -14,10 +14,14 @@
                         class="bg-gray-200 text-gray-700 rounded-full w-6 h-6 flex items-center justify-center text-[12px] font-bold shadow-sm">1</span>
                     <h2 class="font-bold text-[14px] text-gray-800">Cargar Datos iniciales</h2>
                 </div>
-                <p-calendar [(ngModel)]="fecha" dateFormat="dd/mm/yy" [showIcon]="true"
-                    placeholder="Selecciona una fecha" />
-                <p-calendar [(ngModel)]="hora" [showTime]="true" hourFormat="24">
-                </p-calendar>
+                <label class="block text-[11px] font-semibold text-gray-500 mb-1">Fecha y hora de la realización del video</label>
+                <div class="flex flex-row gap-3 m-2">
+                    <input type="date" [(ngModel)]="fecha"
+                    class="text-xs py-1 px-2 h-10 w-36 rounded border border-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                <input type="time" [(ngModel)]="hora"
+                    class="text-xs py-1 px-2 h-10 w-20 rounded border border-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                </div>
+                
                 <label class="block text-[11px] font-semibold text-gray-500 mb-1">Video (.mp4 Equirectangular /
                     .lrv)</label>
                 <input type="file" #fileVideo class="hidden" accept=".mp4,.lrv"

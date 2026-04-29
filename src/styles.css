@@ -9,3 +9,29 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer utilities {
+  .p-datepicker {
+    @apply text-xs;
+  }
+  .p-datepicker table {
+    @apply text-xs;
+  }
+  .p-datepicker table td {
+    @apply p-0.5;
+  }
+  .p-datepicker table th {
+    @apply p-0.5;
+  }
+  .p-datepicker .p-datepicker-header {
+    @apply py-1 px-2;
+  }
+  .p-timepicker {
+    @apply p-2 text-xs;
+  }
+  .p-timepicker button {
+    @apply p-0.5;
+  }
+  .p-timepicker span {
+    @apply text-sm;
+  }
+}

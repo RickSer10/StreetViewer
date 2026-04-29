@@ -54,6 +54,7 @@ export class SidebarComponent implements OnInit {
   exportandoGpx = false;
   exportandoCsv = false;
   asistiendoCalibracion = false;
+  
   fecha: Date | null = null;
   hora: Date | null = null;
 
