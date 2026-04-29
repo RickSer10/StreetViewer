@@ -171,7 +171,7 @@ export class MapaComponent implements OnInit, AfterViewInit {
       this.marcadorVideo = L.marker(latlng, {
         icon: L.divIcon({
           className: 'video-pointer',
-          html: '<div style="width:0;height:0;border-left:10px solid transparent;border-right:10px solid transparent;border-bottom:20px solid #2563eb;filter:drop-shadow(0 2px 3px rgba(0,0,0,.35));transform:translate(-10px,-10px);"></div>',
+          html: '<div style="width:0;height:0;border-left:10px solid transparent;border-right:10px solid transparent;border-bottom:20px solid #eab308;filter:drop-shadow(0 2px 3px rgba(0,0,0,.35));transform:translate(-10px,-10px);"></div>',
           iconSize: [20, 20],
           iconAnchor: [10, 10],
         })
@@ -250,7 +250,8 @@ export class MapaComponent implements OnInit, AfterViewInit {
 
     const calibrados = postes
       .map((p) => ({ ...p, timeN: Number(p.time), xN: Number(p.x), yN: Number(p.y) }))
-      .filter((p) => Number.isFinite(p.timeN) && p.timeN > 0 && Number.isFinite(p.xN) && Number.isFinite(p.yN));
+      // 👇 Se quitó la condición "p.timeN > 0" para que salgan sí o sí aunque no estén calibrados aún
+      .filter((p) => Number.isFinite(p.timeN) && Number.isFinite(p.xN) && Number.isFinite(p.yN));
 
     const proyectados = calibrados.map((p) => {
       const [lat, lng] = this.convertUTMToLatLng(p.xN, p.yN);
@@ -259,34 +260,35 @@ export class MapaComponent implements OnInit, AfterViewInit {
       return { ...p, snapped, dist };
     }).sort((a, b) => a.dist - b.dist);
 
-    const latlngsLinea: L.LatLng[] = [];
 
     proyectados.forEach((p, idx) => {
-      latlngsLinea.push(p.snapped);
       L.circleMarker(p.snapped, {
         radius: 7,
-        fillColor: "#22c55e",
+        fillColor: "#ef4444",
         color: "#ffffff",
         weight: 2,
         fillOpacity: 1
       })
         .addTo(this.capaCalibrados)
-        .bindTooltip(`#${p.id}  t=${p.timeN.toFixed(2)}s`, { permanent: false, direction: 'top' });
+        .bindTooltip(`
+          <div style="text-align: center;">
+            <b>#${p.id}</b> | t=${p.timeN.toFixed(2)}s<br>
+            <span style="font-size: 10px; color: gray;">Lat: ${p.snapped.lat.toFixed(6)}</span><br>
+            <span style="font-size: 10px; color: gray;">Lng: ${p.snapped.lng.toFixed(6)}</span>
+          </div>
+        `, { permanent: false, direction: 'top' });
     });
 
-    if (latlngsLinea.length >= 2) {
-      L.polyline(latlngsLinea, { color: '#22c55e', weight: 4, opacity: 0.9 }).addTo(this.capaCalibrados);
-    }
   }
 
   moverMarcadorSimulado(x: number, y: number) {
-    if(!this.utm) return;
+    if (!this.utm) return;
     try {
       const [lat, lng] = this.convertUTMToLatLng(x, y);
       let punto = new L.LatLng(lat, lng);
 
       if (this.lineaRuta) {
-          punto = this.getClosestPointOnLine(punto);
+        punto = this.getClosestPointOnLine(punto);
       }
 
       if (this.marcadorActual) {
@@ -302,7 +304,7 @@ export class MapaComponent implements OnInit, AfterViewInit {
         })
       }).addTo(this.mapa);
       this.mapa.setView(punto, 17);
-    } catch(err) {}
+    } catch (err) { }
   }
 
   private detectarZonaUTM(lon: number, lat: number) {

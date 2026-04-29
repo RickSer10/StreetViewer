@@ -53,6 +53,15 @@ export class AppComponent implements AfterViewInit, OnDestroy {
         if (videoPlugin.video) {
           clearInterval(waitForVideo);
           const videoEl: HTMLVideoElement = videoPlugin.video;
+
+          // 👇 NUEVO: Forzamos la actualización del puntero apenas el video existe
+          setTimeout(() => {
+            this.mapaComponent?.actualizarPunteroPorVideo(videoEl.currentTime || 0);
+          }, 150);
+
+          // 👇 Prevenimos errores si el navegador bloquea el autoplay silenciosamente
+          videoEl.play().catch(() => console.log('Autoplay en espera de interacción'));
+
           videoEl.play();
           videoEl.addEventListener('timeupdate', () => {
             this.tiempoActual = videoEl.currentTime.toFixed(2);

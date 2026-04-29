@@ -105,6 +105,9 @@ export class SidebarComponent implements OnInit {
               lng: p.wgs84?.lng
             }));
             console.log(`Postes procesados desde API: ${this.postesList.length}`);
+
+            // 👇 NUEVA LÍNEA: Fuerza al mapa a dibujarlos de inmediato
+            this.calibracionChanged.emit(this.postesList as any);
           },
           error: (err) => {
             this.postesList = [];
