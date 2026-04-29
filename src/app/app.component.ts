@@ -25,10 +25,10 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   @ViewChild(MapaComponent) mapaComponent!: MapaComponent;
   @ViewChild('sphereContainer') sphereContainerRef!: ElementRef;
 
+  videoListo: boolean = false;
+
   ngAfterViewInit() {
-    // Aquí es donde busca el video inicial. Como no lo tienes, lanza el aviso.
-    // Al subir un video desde el panel, se reemplaza.
-    this.initViewer('assets/test_video.mp4');
+    //this.initViewer('assets/test_video.mp4');
   }
 
   private initViewer(src: string) {
@@ -89,6 +89,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   cargarVideoLocal(file: File) {
     if (this.blobUrl) URL.revokeObjectURL(this.blobUrl);
     this.blobUrl = URL.createObjectURL(file);
+    this.videoListo = true;
     this.initViewer(this.blobUrl);
   }
 
