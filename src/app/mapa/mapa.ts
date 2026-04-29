@@ -20,8 +20,11 @@ export class MapaComponent implements OnInit, AfterViewInit {
   private mapa!: L.Map;
   private capaRuta = new L.FeatureGroup();
   private capaPostes = new L.FeatureGroup();
+  private capaCalibrados = new L.FeatureGroup();
   private lineaRuta: L.Polyline | null = null;
   private marcadorActual: L.Marker | null = null;
+  private marcadorVideo: L.Marker | null = null;
+  private rutaVideo: Array<{ lat: number; lng: number; t: number }> = [];
 
   private utm = "";
   private wgs84 = "+proj=longlat +datum=WGS84 +no_defs";
@@ -43,11 +46,14 @@ export class MapaComponent implements OnInit, AfterViewInit {
 
     this.mapa.addLayer(this.capaRuta);
     this.mapa.addLayer(this.capaPostes);
+    this.mapa.addLayer(this.capaCalibrados);
+    this.limpiarMarcadoresLegacy();
   }
 
   cargarKMLDinamico(kmlText: string): void {
     try {
       this.capaRuta.clearLayers();
+      this.limpiarMarcadoresLegacy();
       const doc = new DOMParser().parseFromString(kmlText, 'text/xml');
       const coordsTags = doc.getElementsByTagName("coordinates");
       let latlngs: L.LatLng[] = [];
@@ -82,6 +88,115 @@ export class MapaComponent implements OnInit, AfterViewInit {
     } catch (err) {
       console.error("Error KML Eje:", err);
     }
+  }
+
+  private limpiarMarcadoresLegacy() {
+    if (!this.mapa) return;
+    const layers: Record<string, any> = (this.mapa as any)._layers ?? {};
+    for (const key of Object.keys(layers)) {
+      const layer = layers[key];
+      const icon = layer?.options?.icon;
+      const className = icon?.options?.className;
+      const html = icon?.options?.html;
+      const isMarker = layer instanceof L.Marker;
+      const isDivIcon = icon instanceof L.DivIcon;
+      const isUtmPointer = typeof className === 'string' && className.includes('utm-pointer');
+
+      if (isMarker && isDivIcon && !isUtmPointer) {
+        this.mapa.removeLayer(layer);
+        continue;
+      }
+
+      if (typeof className === 'string' && (className.includes('car-marker') || className.includes('nav-pointer'))) {
+        this.mapa.removeLayer(layer);
+        continue;
+      }
+      if (typeof html === 'string' && (html.includes('nav-pointer') || html.includes('car-marker'))) {
+        this.mapa.removeLayer(layer);
+      }
+    }
+    document.querySelectorAll('.car-marker, .nav-pointer').forEach((el) => el.remove());
+  }
+
+  setRutaVideo(
+    ruta: Array<{ lat: number; lng: number; tiempo_video_s: number }>,
+    postesCalibrados?: Array<{ x: string | number; y: string | number; time: string | number }>
+  ) {
+    let base = (ruta ?? [])
+      .map((p) => ({ lat: p.lat, lng: p.lng, t: Number(p.tiempo_video_s) }))
+      .filter((p) => Number.isFinite(p.t))
+      .sort((a, b) => a.t - b.t);
+
+    const hint = this.getStartHintLatLng(postesCalibrados);
+    if (hint && base.length >= 2) {
+      const start = new L.LatLng(base[0].lat, base[0].lng);
+      const end = new L.LatLng(base[base.length - 1].lat, base[base.length - 1].lng);
+      const dStart = hint.distanceTo(start);
+      const dEnd = hint.distanceTo(end);
+      if (dEnd < dStart) {
+        const tMin = base[0].t;
+        const tMax = base[base.length - 1].t;
+        const mirror = (t: number) => tMin + tMax - t;
+        base = base.slice().reverse().map((p) => ({ ...p, t: mirror(p.t) })).sort((a, b) => a.t - b.t);
+      }
+    }
+
+    this.rutaVideo = base;
+    this.marcadorVideo?.remove();
+    this.marcadorVideo = null;
+  }
+
+  private getStartHintLatLng(postesCalibrados?: Array<{ x: string | number; y: string | number; time: string | number }>) {
+    if (!postesCalibrados || postesCalibrados.length < 1 || !this.utm) return null;
+    const valid = postesCalibrados
+      .map((p) => ({ x: Number(p.x), y: Number(p.y), time: Number(p.time) }))
+      .filter((p) => Number.isFinite(p.x) && Number.isFinite(p.y) && Number.isFinite(p.time) && p.time > 0)
+      .sort((a, b) => a.time - b.time);
+    if (valid.length < 1) return null;
+    try {
+      const [lat, lng] = this.convertUTMToLatLng(valid[0].x, valid[0].y);
+      const snapped = this.lineaRuta ? this.getClosestPointOnLine(new L.LatLng(lat, lng)) : new L.LatLng(lat, lng);
+      return snapped;
+    } catch {
+      return null;
+    }
+  }
+
+  actualizarPunteroPorVideo(t: number) {
+    if (!this.mapa || this.rutaVideo.length === 0) return;
+    const p = this.interpolarPorTiempo(t);
+    if (!p) return;
+    const latlng = new L.LatLng(p.lat, p.lng);
+    if (!this.marcadorVideo) {
+      this.marcadorVideo = L.marker(latlng, {
+        icon: L.divIcon({
+          className: 'video-pointer',
+          html: '<div style="width:0;height:0;border-left:10px solid transparent;border-right:10px solid transparent;border-bottom:20px solid #2563eb;filter:drop-shadow(0 2px 3px rgba(0,0,0,.35));transform:translate(-10px,-10px);"></div>',
+          iconSize: [20, 20],
+          iconAnchor: [10, 10],
+        })
+      }).addTo(this.mapa);
+    } else {
+      this.marcadorVideo.setLatLng(latlng);
+    }
+  }
+
+  private interpolarPorTiempo(t: number): { lat: number; lng: number } | null {
+    if (this.rutaVideo.length === 1) return { lat: this.rutaVideo[0].lat, lng: this.rutaVideo[0].lng };
+    const first = this.rutaVideo[0];
+    const last = this.rutaVideo[this.rutaVideo.length - 1];
+    if (t <= first.t) return { lat: first.lat, lng: first.lng };
+    if (t >= last.t) return { lat: last.lat, lng: last.lng };
+    for (let i = 0; i < this.rutaVideo.length - 1; i++) {
+      const a = this.rutaVideo[i];
+      const b = this.rutaVideo[i + 1];
+      if (t >= a.t && t <= b.t) {
+        const dt = b.t - a.t;
+        const r = dt > 0 ? (t - a.t) / dt : 0;
+        return { lat: a.lat + (b.lat - a.lat) * r, lng: a.lng + (b.lng - a.lng) * r };
+      }
+    }
+    return null;
   }
 
   dibujarPostes(postes: any[]) {
@@ -128,6 +243,42 @@ export class MapaComponent implements OnInit, AfterViewInit {
     }
   }
 
+  dibujarPostesCalibrados(postes: Array<{ id: number; x: string | number; y: string | number; time: string | number }>) {
+    if (!this.lineaRuta || !this.utm) return;
+
+    this.capaCalibrados.clearLayers();
+
+    const calibrados = postes
+      .map((p) => ({ ...p, timeN: Number(p.time), xN: Number(p.x), yN: Number(p.y) }))
+      .filter((p) => Number.isFinite(p.timeN) && p.timeN > 0 && Number.isFinite(p.xN) && Number.isFinite(p.yN));
+
+    const proyectados = calibrados.map((p) => {
+      const [lat, lng] = this.convertUTMToLatLng(p.xN, p.yN);
+      const snapped = this.getClosestPointOnLine(new L.LatLng(lat, lng));
+      const dist = this.getDistanceAlongRoute(snapped);
+      return { ...p, snapped, dist };
+    }).sort((a, b) => a.dist - b.dist);
+
+    const latlngsLinea: L.LatLng[] = [];
+
+    proyectados.forEach((p, idx) => {
+      latlngsLinea.push(p.snapped);
+      L.circleMarker(p.snapped, {
+        radius: 7,
+        fillColor: "#22c55e",
+        color: "#ffffff",
+        weight: 2,
+        fillOpacity: 1
+      })
+        .addTo(this.capaCalibrados)
+        .bindTooltip(`#${p.id}  t=${p.timeN.toFixed(2)}s`, { permanent: false, direction: 'top' });
+    });
+
+    if (latlngsLinea.length >= 2) {
+      L.polyline(latlngsLinea, { color: '#22c55e', weight: 4, opacity: 0.9 }).addTo(this.capaCalibrados);
+    }
+  }
+
   moverMarcadorSimulado(x: number, y: number) {
     if(!this.utm) return;
     try {
@@ -142,7 +293,14 @@ export class MapaComponent implements OnInit, AfterViewInit {
         this.mapa.removeLayer(this.marcadorActual);
       }
 
-      this.marcadorActual = L.marker(punto).addTo(this.mapa);
+      this.marcadorActual = L.marker(punto, {
+        icon: L.divIcon({
+          className: 'utm-pointer',
+          html: '<div style="width:14px;height:14px;background:#ef4444;border:2px solid #fff;border-radius:999px;box-shadow:0 0 0 2px #b91c1c;"></div>',
+          iconSize: [14, 14],
+          iconAnchor: [7, 7]
+        })
+      }).addTo(this.mapa);
       this.mapa.setView(punto, 17);
     } catch(err) {}
   }

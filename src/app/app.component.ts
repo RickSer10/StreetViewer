@@ -6,6 +6,7 @@ import { CommonModule } from '@angular/common';
 import { Viewer } from '@photo-sphere-viewer/core';
 import { VideoPlugin } from '@photo-sphere-viewer/video-plugin';
 import { EquirectangularVideoAdapter } from '@photo-sphere-viewer/equirectangular-video-adapter';
+import { MatrizGeneradaData } from './components/panellateral/sidebar.component';
 
 @Component({
   selector: 'app-root',
@@ -55,6 +56,10 @@ export class AppComponent implements AfterViewInit, OnDestroy {
           videoEl.play();
           videoEl.addEventListener('timeupdate', () => {
             this.tiempoActual = videoEl.currentTime.toFixed(2);
+            this.mapaComponent?.actualizarPunteroPorVideo(videoEl.currentTime);
+          });
+          videoEl.addEventListener('seeked', () => {
+            this.mapaComponent?.actualizarPunteroPorVideo(videoEl.currentTime);
           });
         }
       }, 100);
@@ -87,10 +92,16 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     reader.readAsText(file);
   }
 
-  dibujarMatrizEnMapa(postes: any[]) {
+  dibujarMatrizEnMapa(data: MatrizGeneradaData) {
     if (this.mapaComponent) {
-      this.mapaComponent.dibujarPostes(postes);
+      this.mapaComponent.dibujarPostesCalibrados(data.postes as any);
+      this.mapaComponent.setRutaVideo(data.ruta as any, data.postes as any);
+      this.mapaComponent.actualizarPunteroPorVideo(parseFloat(this.tiempoActual));
     }
+  }
+
+  onCalibracionChanged(postes: any[]) {
+    this.mapaComponent?.dibujarPostesCalibrados(postes);
   }
 
   saltoVideoYMapa(data: { x: string, y: string, time: number }) {

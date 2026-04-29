@@ -5,6 +5,7 @@
     (videoSelected)="cargarVideoLocal($event)"
     (kmlSelected)="cargarKmlLocal($event)"
     (matrizGeneradaEvent)="dibujarMatrizEnMapa($event)"
+    (calibracionChanged)="onCalibracionChanged($event)"
     (buscarUtmEvent)="saltoVideoYMapa($event)">
   </app-sidebar>
 
@@ -25,7 +26,13 @@
 
       <div #sphereContainer class="w-full h-full"></div>
 
-      <div *ngIf="mapaPrincipal" (click)="intercambiarVistas()" class="absolute inset-0 z-30 bg-black/10 hover:bg-black/40 flex items-center justify-center transition-all"></div>
+      <button
+        *ngIf="mapaPrincipal"
+        (click)="intercambiarVistas()"
+        class="absolute top-2 right-2 z-30 bg-black/70 hover:bg-black text-white text-[10px] px-2 py-1 rounded-md border border-white/20"
+      >
+        Maximizar
+      </button>
     </div>
 
     <div [class]="!mapaPrincipal
@@ -34,7 +41,13 @@
 
       <app-mapa class="w-full h-full block"></app-mapa>
 
-      <div *ngIf="!mapaPrincipal" (click)="intercambiarVistas()" class="absolute inset-0 z-30 bg-white/10 hover:bg-black/10 flex items-center justify-center transition-all"></div>
+      <button
+        *ngIf="!mapaPrincipal"
+        (click)="intercambiarVistas()"
+        class="absolute top-2 right-2 z-30 bg-white/85 hover:bg-white text-gray-800 text-[10px] px-2 py-1 rounded-md border border-gray-300"
+      >
+        Maximizar
+      </button>
     </div>
 
   </div>

@@ -94,6 +94,12 @@
                     Generar Matriz Interpolada
                 </button>
 
+                <button (click)="asistirCalibracion()" [disabled]="postesList.length === 0 || asistiendoCalibracion"
+                    class="w-full mt-2 text-white font-bold text-[12px] py-2 rounded shadow transition-all"
+                    [ngClass]="postesList.length > 0 && !asistiendoCalibracion ? 'bg-[#0ea5e9] hover:bg-sky-700 cursor-pointer' : 'bg-[#7dd3fc] cursor-not-allowed'">
+                    {{ asistiendoCalibracion ? 'Asistiendo...' : 'Asistir calibración (tiempo actual)' }}
+                </button>
+
                 <div *ngIf="matrizGenerada" class="text-center text-[11px] text-[#16a34a] font-bold mt-2">
                     ✓ Ruta calibrada con {{ postesCalibradosCount }} postes procesados.
                 </div>
@@ -145,29 +151,46 @@
             </div>
         </p-tabPanel>
         <p-tabPanel header="Exportar">
+            <div class="p-3 border-b border-gray-100">
+                <h2 class="font-bold text-[14px] text-gray-800 mb-3">Exportar desde API</h2>
+                <div class="grid grid-cols-2 gap-2">
+                    <button (click)="exportarGpx()" [disabled]="!ejeFile || exportandoGpx"
+                        class="w-full text-white font-bold text-[12px] py-2 rounded shadow transition-all"
+                        [ngClass]="!ejeFile || exportandoGpx ? 'bg-[#93c5fd] cursor-not-allowed' : 'bg-[#2563eb] hover:bg-blue-700 cursor-pointer'">
+                        {{ exportandoGpx ? 'Exportando...' : 'Exportar GPX' }}
+                    </button>
+                    <button (click)="exportarCsvPostes()" [disabled]="postesList.length === 0 || exportandoCsv"
+                        class="w-full text-white font-bold text-[12px] py-2 rounded shadow transition-all"
+                        [ngClass]="postesList.length === 0 || exportandoCsv ? 'bg-[#86efac] cursor-not-allowed' : 'bg-[#16a34a] hover:bg-green-700 cursor-pointer'">
+                        {{ exportandoCsv ? 'Exportando...' : 'Exportar CSV Postes' }}
+                    </button>
+                </div>
+            </div>
 
             <div class="flex flex-col items-center gap-3 mb-4">
-                <h2 class="font-bold text-[14px] text-gray-800">Exportar en GPX</h2>
-                <p-table [value]="puntos" class="w-full text-sm rounded-xl " responsiveLayout="scroll">
+                <h2 class="font-bold text-[14px] text-gray-800">Ruta generada (preview)</h2>
+                <p-table [value]="rutaGenerada" class="w-full text-sm rounded-xl" responsiveLayout="scroll">
                     <ng-template pTemplate="header">
                         <tr class="bg-gray-100">
                             <th class="text-left px-3 py-2">Latitud</th>
                             <th class="text-left px-3 py-2">Longitud</th>
+                            <th class="text-left px-3 py-2">Tiempo (s)</th>
                         </tr>
                     </ng-template>
 
                     <ng-template pTemplate="body" let-punto>
                         <tr class="border-t hover:bg-gray-50">
                             <td class="px-3 py-2">{{ punto.lat }}</td>
-                            <td class="px-3 py-2">{{ punto.lon }}</td>
+                            <td class="px-3 py-2">{{ punto.lng }}</td>
+                            <td class="px-3 py-2">{{ punto.tiempo_video_s }}</td>
                         </tr>
                     </ng-template>
                 </p-table>
             </div>
 
             <div class="flex flex-col items-center gap-3 mb-4">
-                <h2 class="font-bold text-[14px] text-gray-800">Exportar en GPX</h2>
-                <p-table [value]="resultados" class="mt-4">
+                <h2 class="font-bold text-[14px] text-gray-800">Tramos (distancia / velocidad)</h2>
+                <p-table [value]="tramosRuta" class="mt-4">
                     <ng-template pTemplate="header">
                         <tr>
                             <th>Tramo</th>
@@ -178,9 +201,9 @@
 
                     <ng-template pTemplate="body" let-r>
                         <tr>
-                            <td>{{ r.desde }} → {{ r.hasta }}</td>
-                            <td>{{ r.distancia }}</td>
-                            <td>{{ r.velocidad }}</td>
+                            <td>{{ r.tramo }}</td>
+                            <td>{{ r.distancia_m }}</td>
+                            <td>{{ r.velocidad_m_s }}</td>
                         </tr>
                     </ng-template>
                 </p-table>
