@@ -11,7 +11,7 @@ import { MatrizGeneradaData } from './components/panellateral/sidebar.component'
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, SidebarComponent, MapaComponent, CommonModule],
+  imports: [SidebarComponent, MapaComponent, CommonModule],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css'
 })
