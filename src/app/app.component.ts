@@ -1,7 +1,7 @@
 import { Component, ViewChild, OnDestroy, AfterViewInit, ElementRef } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { SidebarComponent } from './components/panellateral/sidebar.component';
-import { MapaComponent } from './mapa/mapa';
+import { MapaComponent } from './components/mapa/mapa';
 import { CommonModule } from '@angular/common';
 import { Viewer } from '@photo-sphere-viewer/core';
 import { VideoPlugin } from '@photo-sphere-viewer/video-plugin';
