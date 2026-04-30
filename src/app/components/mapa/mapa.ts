@@ -122,10 +122,11 @@ export class MapaComponent implements OnInit, AfterViewInit {
     ruta: Array<{ lat: number; lng: number; tiempo_video_s: number }>,
     postesCalibrados?: Array<{ x: string | number; y: string | number; time: string | number }>
   ) {
+// Tomamos la ruta de la API y confiamos ciegamente en el tiempo asignado a cada coordenada
     let base = (ruta ?? [])
       .map((p) => ({ lat: p.lat, lng: p.lng, t: Number(p.tiempo_video_s) }))
       .filter((p) => Number.isFinite(p.t))
-      .sort((a, b) => a.t - b.t);
+      .sort((a, b) => a.t - b.t); // Ordenamos estrictamente por el tiempo del video
 
     const hint = this.getStartHintLatLng(postesCalibrados);
     if (hint && base.length >= 2) {

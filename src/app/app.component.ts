@@ -18,6 +18,7 @@ import { MatrizGeneradaData } from './components/panellateral/sidebar.component'
 export class AppComponent implements AfterViewInit, OnDestroy {
   tiempoActual: string = '0.00';
   mapaPrincipal = false;
+  videoListo = false; // <-- Añadimos la bandera
 
   private viewer: Viewer | null = null;
   private blobUrl: string | null = null;
@@ -26,9 +27,8 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   @ViewChild('sphereContainer') sphereContainerRef!: ElementRef;
 
   ngAfterViewInit() {
-    // Aquí es donde busca el video inicial. Como no lo tienes, lanza el aviso.
-    // Al subir un video desde el panel, se reemplaza.
-    this.initViewer('assets/test_video.mp4');
+// Ya no inicializamos un video por defecto para que muestre la pantalla "Sin video"
+    // this.initViewer('assets/test_video.mp4');
   }
 
   private initViewer(src: string) {
@@ -87,9 +87,15 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   }
 
   cargarVideoLocal(file: File) {
-    if (this.blobUrl) URL.revokeObjectURL(this.blobUrl);
+if (this.blobUrl) URL.revokeObjectURL(this.blobUrl);
     this.blobUrl = URL.createObjectURL(file);
-    this.initViewer(this.blobUrl);
+    this.videoListo = true; // <-- Indicamos que el video ya se cargó
+
+    // Le damos un pequeño respiro a Angular para que quite la clase "hidden"
+    // del contenedor antes de montar el Viewer de 360, sino dará error de dimensiones.
+    setTimeout(() => {
+      this.initViewer(this.blobUrl!);
+    }, 50);
   }
 
   cargarKmlLocal(file: File) {

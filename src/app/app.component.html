@@ -1,6 +1,6 @@
 <div class="flex h-screen w-full overflow-hidden bg-gray-100 font-sans">
 
-  <app-sidebar class="flex-shrink-0 z-50 shadow-2xl"
+  <app-sidebar class="flex-shrink-0 z-50 shadow-2xl relative"
     [tiempoActual]="tiempoActual"
     (videoSelected)="cargarVideoLocal($event)"
     (kmlSelected)="cargarKmlLocal($event)"
@@ -9,43 +9,42 @@
     (buscarUtmEvent)="saltoVideoYMapa($event)">
   </app-sidebar>
 
-  <div class="flex-1 relative h-full bg-black overflow-hidden flex flex-col">
-
-    <button (click)="intercambiarVistas()" class="absolute top-4 right-4 z-[100] bg-black/70 hover:bg-black text-white px-5 py-2.5 rounded-xl backdrop-blur-sm border border-white/20 shadow-xl transition-all">
-      <span class="text-[12px] font-bold tracking-wide">{{ mapaPrincipal ? '🎬 VER VIDEO PRINCIPAL' : '🗺️ MAXIMIZAR MAPA' }}</span>
-    </button>
+  <div class="flex-1 relative h-full bg-[#0b1120] overflow-hidden flex flex-col">
 
     <div [class]="mapaPrincipal
-        ? 'absolute bottom-6 right-6 w-[350px] h-[250px] z-20 rounded-xl overflow-hidden border-4 border-gray-800 shadow-2xl transition-all duration-500 cursor-pointer group'
-        : 'absolute inset-0 w-full h-full z-0 transition-all duration-500 flex flex-col justify-center'">
+        ? 'absolute bottom-6 right-6 w-[360px] h-[240px] z-40 rounded-xl overflow-hidden shadow-[0_10px_40px_rgba(0,0,0,0.5)] transition-all duration-500 bg-[#0b1120] border border-gray-700/50'
+        : 'absolute inset-0 w-full h-full z-10 transition-all duration-500 flex flex-col justify-center bg-[#0b1120]'">
 
-      <div *ngIf="!mapaPrincipal" class="absolute top-4 left-4 bg-black/80 text-white px-3 py-1.5 rounded-md shadow-lg z-20 flex items-center gap-2 font-mono text-[12px]">
+      <div *ngIf="!mapaPrincipal && videoListo"
+        class="absolute top-4 left-4 bg-black/80 text-white px-3 py-1.5 rounded-md shadow-lg z-20 flex items-center gap-2 font-mono text-[12px]">
         <div class="w-2 h-2 bg-red-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.8)]"></div>
         <span class="font-bold text-gray-200">Tiempo: <span class="text-yellow-400">{{ tiempoActual }} s</span></span>
       </div>
 
-      <div #sphereContainer class="w-full h-full"></div>
+      <div *ngIf="!videoListo"
+        class="w-full h-full flex flex-col items-center justify-center text-white select-none p-4 transition-transform duration-500"
+        [ngClass]="mapaPrincipal ? 'scale-90' : 'scale-100'">
+        <i class="pi pi-video mb-3 text-gray-300" [ngClass]="mapaPrincipal ? 'text-4xl' : 'text-5xl'"></i>
+        <h2 class="font-bold tracking-wide text-gray-100" [ngClass]="mapaPrincipal ? 'text-[15px] mb-1' : 'text-xl mb-2'">Sin video cargado</h2>
+        <p class="text-gray-400 text-center leading-tight" [ngClass]="mapaPrincipal ? 'text-[10px] px-4' : 'text-sm max-w-sm'">Carga un video 360° desde el panel lateral para comenzar</p>
+      </div>
 
-      <button
-        *ngIf="mapaPrincipal"
-        (click)="intercambiarVistas()"
-        class="absolute top-2 right-2 z-30 bg-black/70 hover:bg-black text-white text-[10px] px-2 py-1 rounded-md border border-white/20"
-      >
+      <div #sphereContainer class="w-full h-full outline-none" [class.hidden]="!videoListo"></div>
+
+      <button *ngIf="mapaPrincipal" (click)="intercambiarVistas()"
+        class="absolute top-3 right-3 z-50 bg-[#0a0a0a] text-gray-200 font-semibold text-[9px] px-3 py-1.5 rounded border border-gray-600 shadow-lg hover:bg-gray-800 hover:text-white transition-colors cursor-pointer">
         Maximizar
       </button>
     </div>
 
     <div [class]="!mapaPrincipal
-        ? 'absolute bottom-6 right-6 w-[350px] h-[250px] z-20 rounded-xl overflow-hidden border-4 border-white shadow-2xl transition-all duration-500 cursor-pointer group'
-        : 'absolute inset-0 w-full h-full z-0 transition-all duration-500'">
+        ? 'absolute bottom-6 right-6 w-[360px] h-[240px] z-40 rounded-xl overflow-hidden shadow-[0_10px_40px_rgba(0,0,0,0.5)] transition-all duration-500 bg-white border border-gray-300'
+        : 'absolute inset-0 w-full h-full z-10 transition-all duration-500 bg-white'">
 
       <app-mapa class="w-full h-full block"></app-mapa>
 
-      <button
-        *ngIf="!mapaPrincipal"
-        (click)="intercambiarVistas()"
-        class="absolute top-2 right-2 z-30 bg-white/85 hover:bg-white text-gray-800 text-[10px] px-2 py-1 rounded-md border border-gray-300"
-      >
+      <button *ngIf="!mapaPrincipal" (click)="intercambiarVistas()"
+        class="absolute top-3 right-3 z-50 bg-[#0a0a0a] text-gray-200 font-semibold text-[9px] px-3 py-1.5 rounded border border-gray-600 shadow-lg hover:bg-gray-800 hover:text-white transition-colors cursor-pointer">
         Maximizar
       </button>
     </div>

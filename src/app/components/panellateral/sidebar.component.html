@@ -1,216 +1,221 @@
 <div class="w-[380px] h-full bg-white flex flex-col border-r border-gray-200 shadow-lg z-50 font-sans">
 
-    <div class="bg-[#1d4ed8] text-white p-5 border-b border-blue-700">
-        <h1 class="font-bold text-[1.15rem] leading-tight tracking-wide">Visor 360° Geo-Espacial</h1>
-        <p class="text-[0.8rem] text-blue-100 mt-0.5">Interpolación por Eje de Vía + Planta</p>
-    </div>
+  <div class="bg-[#1d4ed8] text-white p-5 border-b border-blue-700">
+    <h1 class="font-bold text-[1.15rem] leading-tight tracking-wide">Visor 360° Geo-Espacial</h1>
+    <p class="text-[0.8rem] text-blue-100 mt-0.5">Interpolación por Eje de Vía + Planta</p>
+  </div>
 
-    <p-tabView [(activeIndex)]="activeIndex"
-        class="bg-slate-400 overflow-y-auto scrollbar-thin scrollbar-thumb-blue-500 scrollbar-track-gray-200">
-        <p-tabPanel header="Importar" class="bg-slate-500">
-            <div class="p-3 border-b border-gray-100">
-                <div class="flex items-center gap-3 mb-4">
-                    <span
-                        class="bg-gray-200 text-gray-700 rounded-full w-6 h-6 flex items-center justify-center text-[12px] font-bold shadow-sm">1</span>
-                    <h2 class="font-bold text-[14px] text-gray-800">Cargar Datos iniciales</h2>
-                </div>
-                <p-calendar [(ngModel)]="fecha" dateFormat="dd/mm/yy" [showIcon]="true"
-                    placeholder="Selecciona una fecha" />
-                <p-calendar [(ngModel)]="hora" [showTime]="true" hourFormat="24">
-                </p-calendar>
-                <label class="block text-[11px] font-semibold text-gray-500 mb-1">Video (.mp4 Equirectangular /
-                    .lrv)</label>
-                <input type="file" #fileVideo class="hidden" accept=".mp4,.lrv"
-                    (change)="onFileChange($event, 'video')">
-                <div class="flex items-center border border-gray-200 rounded-md overflow-hidden mb-4 bg-white">
-                    <button (click)="fileVideo.click()"
-                        class="bg-[#eff6ff] text-[#2563eb] px-3 py-2 text-[11px] font-bold border-r border-gray-200 hover:bg-blue-100 transition min-w-[120px]">
-                        Seleccionar archivo
-                    </button>
-                    <span class="px-3 py-2 text-[11px] text-gray-500 w-full truncate">{{ videoFileName || '' }}</span>
-                </div>
+  <p-tabView [(activeIndex)]="activeIndex"
+    class="bg-slate-400 overflow-y-auto scrollbar-thin scrollbar-thumb-blue-500 scrollbar-track-gray-200">
+    <p-tabPanel header="Importar" class="bg-slate-500">
+      <div class="p-3 border-b border-gray-100">
+        <div class="flex items-center gap-3 mb-4">
+          <span
+            class="bg-gray-200 text-gray-700 rounded-full w-6 h-6 flex items-center justify-center text-[12px] font-bold shadow-sm">1</span>
+          <h2 class="font-bold text-[14px] text-gray-800">Cargar Datos iniciales</h2>
+        </div>
+        <div class="mb-4">
+          <label class="block text-[11px] font-bold text-gray-600 mb-1">Fecha y hora de la realización del video</label>
+          <div class="grid grid-cols-2 gap-2">
+            <p-calendar [(ngModel)]="fecha" dateFormat="dd/mm/yy" [showIcon]="true" placeholder="dd/mm/aaaa"
+              styleClass="w-full text-[11px]">
+            </p-calendar>
 
-                <label class="block text-[11px] font-semibold text-gray-500 mb-1">Ruta Eje de Vía (.kml)</label>
-                <input type="file" #fileEje class="hidden" accept=".kml" (change)="onFileChange($event, 'eje')">
-                <div class="flex items-center border border-gray-200 rounded-md overflow-hidden bg-white">
-                    <button (click)="fileEje.click()"
-                        class="bg-[#f0fdf4] text-[#16a34a] px-3 py-2 text-[11px] font-bold border-r border-gray-200 hover:bg-green-50 transition min-w-[120px]">
-                        Seleccionar archivo
-                    </button>
-                    <span class="px-3 py-2 text-[11px] text-gray-500 w-full truncate">{{ ejeFileName || '' }}</span>
-                </div>
+            <p-calendar [(ngModel)]="hora" [showTime]="true" [timeOnly]="true" hourFormat="24" [showIcon]="true"
+              icon="pi pi-clock" placeholder="--:--" styleClass="w-full text-[11px]">
+            </p-calendar>
+          </div>
+        </div>
+        <label class="block text-[11px] font-semibold text-gray-500 mb-1">Video (.mp4 Equirectangular /
+          .lrv)</label>
+        <input type="file" #fileVideo class="hidden" accept=".mp4,.lrv" (change)="onFileChange($event, 'video')">
+        <div class="flex items-center border border-gray-200 rounded-md overflow-hidden mb-4 bg-white">
+          <button (click)="fileVideo.click()"
+            class="bg-[#eff6ff] text-[#2563eb] px-3 py-2 text-[11px] font-bold border-r border-gray-200 hover:bg-blue-100 transition min-w-[120px]">
+            Seleccionar archivo
+          </button>
+          <span class="px-3 py-2 text-[11px] text-gray-500 w-full truncate">{{ videoFileName || '' }}</span>
+        </div>
 
-                <div *ngIf="ejeFileName"
-                    class="text-[11px] text-[#16a34a] italic font-medium flex items-center gap-1.5 mt-2">
-                    <span class="bg-green-100 rounded px-1.5 py-0.5">✅</span>
-                    <b>{{ puntosProcesados }}</b> puntos base procesados y trazados.
-                </div>
-            </div>
+        <label class="block text-[11px] font-semibold text-gray-500 mb-1">Ruta Eje de Vía (.kml)</label>
+        <input type="file" #fileEje class="hidden" accept=".kml" (change)="onFileChange($event, 'eje')">
+        <div class="flex items-center border border-gray-200 rounded-md overflow-hidden bg-white">
+          <button (click)="fileEje.click()"
+            class="bg-[#f0fdf4] text-[#16a34a] px-3 py-2 text-[11px] font-bold border-r border-gray-200 hover:bg-green-50 transition min-w-[120px]">
+            Seleccionar archivo
+          </button>
+          <span class="px-3 py-2 text-[11px] text-gray-500 w-full truncate">{{ ejeFileName || '' }}</span>
+        </div>
 
-            <div class="p-3 border-b border-gray-100">
-                <div class="flex items-center gap-3 mb-4">
-                    <span
-                        class="bg-gray-100 text-gray-500 rounded-full w-6 h-6 flex items-center justify-center text-[12px] font-bold">2</span>
-                    <h2 class="font-bold text-[14px] text-gray-800">Calibración de Postes</h2>
-                </div>
+        <div *ngIf="ejeFileName" class="text-[11px] text-[#16a34a] italic font-medium flex items-center gap-1.5 mt-2">
+          <span class="bg-green-100 rounded px-1.5 py-0.5">✅</span>
+          <b>{{ puntosProcesados }}</b> puntos base procesados y trazados.
+        </div>
+      </div>
 
-                <div class="border border-gray-200 bg-[#f8fafc] p-3 rounded-md mb-4">
-                    <label class="block text-[11px] font-bold text-gray-600 mb-1">Cargar Postes de Referencia
-                        (.kml)</label>
-                    <p class="text-[10px] text-gray-500 mb-3 leading-tight">El sistema filtrará los postes cercanos y
-                        los
-                        proyectará al eje de la vía automáticamente.</p>
+      <div class="p-3 border-b border-gray-100">
+        <div class="flex items-center gap-3 mb-4">
+          <span
+            class="bg-gray-100 text-gray-500 rounded-full w-6 h-6 flex items-center justify-center text-[12px] font-bold">2</span>
+          <h2 class="font-bold text-[14px] text-gray-800">Calibración de Postes</h2>
+        </div>
 
-                    <input type="file" #filePostes class="hidden" accept=".kml"
-                        (change)="onFileChange($event, 'postes')">
-                    <div class="flex items-center border border-gray-200 rounded overflow-hidden bg-white">
-                        <button (click)="filePostes.click()"
-                            class="bg-gray-100 px-3 py-1.5 text-[11px] text-gray-600 font-bold border-r border-gray-200 hover:bg-gray-200 transition">
-                            Seleccionar archivo
-                        </button>
-                        <span class="px-2 py-1.5 text-[11px] text-gray-500 w-full truncate">{{ postesFileName || ''
-                            }}</span>
-                    </div>
-                </div>
+        <div class="border border-gray-200 bg-[#f8fafc] p-3 rounded-md mb-4">
+          <label class="block text-[11px] font-bold text-gray-600 mb-1">Cargar Postes de Referencia
+            (.kml)</label>
+          <p class="text-[10px] text-gray-500 mb-3 leading-tight">El sistema filtrará los postes cercanos y
+            los
+            proyectará al eje de la vía automáticamente.</p>
 
-                <div *ngIf="postesList.length > 0"
-                    class="border border-gray-200 rounded-md p-2.5 mb-4 max-h-[160px] overflow-y-auto pr-1 bg-white">
-                    <div *ngFor="let poste of postesList"
-                        class="flex items-center gap-2 mb-2 pb-2 border-b border-gray-100 last:border-0 last:mb-0 last:pb-0">
-                        <span class="text-[11px] font-bold text-gray-500 w-4 text-center">{{ poste.id }}</span>
-                        <input type="text" [(ngModel)]="poste.time"
-                            class="w-[50px] border border-blue-300 rounded text-[11px] text-blue-600 font-bold p-1.5 outline-none text-center bg-white shadow-sm focus:border-blue-500">
-                        <input type="text" [value]="poste.x" disabled
-                            class="w-[70px] bg-gray-50 text-[10px] text-gray-400 p-1.5 rounded border border-transparent outline-none text-center">
-                        <input type="text" [value]="poste.y" disabled
-                            class="w-[70px] bg-gray-50 text-[10px] text-gray-400 p-1.5 rounded border border-transparent outline-none text-center">
-                        <button (click)="pegarTiempo(poste)"
-                            class="bg-[#dbeafe] text-[#2563eb] font-bold text-[10px] px-2 py-1.5 rounded hover:bg-blue-200 transition">
-                            Pegar T.
-                        </button>
-                    </div>
-                </div>
+          <input type="file" #filePostes class="hidden" accept=".kml" (change)="onFileChange($event, 'postes')">
+          <div class="flex items-center border border-gray-200 rounded overflow-hidden bg-white">
+            <button (click)="filePostes.click()"
+              class="bg-gray-100 px-3 py-1.5 text-[11px] text-gray-600 font-bold border-r border-gray-200 hover:bg-gray-200 transition">
+              Seleccionar archivo
+            </button>
+            <span class="px-2 py-1.5 text-[11px] text-gray-500 w-full truncate">{{ postesFileName || ''
+              }}</span>
+          </div>
+        </div>
 
-                <button (click)="generarMatriz()" [disabled]="postesList.length === 0"
-                    class="w-full text-white font-bold text-[13px] py-2.5 rounded shadow transition-all"
-                    [ngClass]="postesList.length > 0 ? 'bg-[#4f46e5] hover:bg-indigo-700 cursor-pointer' : 'bg-[#c7c6f5] cursor-not-allowed'">
-                    Generar Matriz Interpolada
-                </button>
+        <div *ngIf="postesList.length > 0"
+          class="border border-gray-200 rounded-md p-2.5 mb-4 max-h-[160px] overflow-y-auto pr-1 bg-white">
+          <div *ngFor="let poste of postesList"
+            class="flex items-center gap-2 mb-2 pb-2 border-b border-gray-100 last:border-0 last:mb-0 last:pb-0">
+            <span class="text-[11px] font-bold text-gray-500 w-4 text-center">{{ poste.id }}</span>
+            <input type="text" [(ngModel)]="poste.time"
+              class="w-[50px] border border-blue-300 rounded text-[11px] text-blue-600 font-bold p-1.5 outline-none text-center bg-white shadow-sm focus:border-blue-500">
+            <input type="text" [value]="poste.x" disabled
+              class="w-[70px] bg-gray-50 text-[10px] text-gray-400 p-1.5 rounded border border-transparent outline-none text-center">
+            <input type="text" [value]="poste.y" disabled
+              class="w-[70px] bg-gray-50 text-[10px] text-gray-400 p-1.5 rounded border border-transparent outline-none text-center">
+            <button (click)="pegarTiempo(poste)"
+              class="bg-[#dbeafe] text-[#2563eb] font-bold text-[10px] px-2 py-1.5 rounded hover:bg-blue-200 transition">
+              Pegar T.
+            </button>
+          </div>
+        </div>
 
-                <button (click)="asistirCalibracion()" [disabled]="postesList.length === 0 || asistiendoCalibracion"
-                    class="w-full mt-2 text-white font-bold text-[12px] py-2 rounded shadow transition-all"
-                    [ngClass]="postesList.length > 0 && !asistiendoCalibracion ? 'bg-[#0ea5e9] hover:bg-sky-700 cursor-pointer' : 'bg-[#7dd3fc] cursor-not-allowed'">
-                    {{ asistiendoCalibracion ? 'Asistiendo...' : 'Asistir calibración (tiempo actual)' }}
-                </button>
+        <button (click)="generarMatriz()" [disabled]="postesList.length === 0"
+          class="w-full text-white font-bold text-[13px] py-2.5 rounded shadow transition-all"
+          [ngClass]="postesList.length > 0 ? 'bg-[#4f46e5] hover:bg-indigo-700 cursor-pointer' : 'bg-[#c7c6f5] cursor-not-allowed'">
+          Generar Matriz Interpolada
+        </button>
 
-                <div *ngIf="matrizGenerada" class="text-center text-[11px] text-[#16a34a] font-bold mt-2">
-                    ✓ Ruta calibrada con {{ postesCalibradosCount }} postes procesados.
-                </div>
-            </div>
+        <button (click)="asistirCalibracion()" [disabled]="postesList.length === 0 || asistiendoCalibracion"
+          class="w-full mt-2 text-white font-bold text-[12px] py-2 rounded shadow transition-all"
+          [ngClass]="postesList.length > 0 && !asistiendoCalibracion ? 'bg-[#0ea5e9] hover:bg-sky-700 cursor-pointer' : 'bg-[#7dd3fc] cursor-not-allowed'">
+          {{ asistiendoCalibracion ? 'Asistiendo...' : 'Asistir calibración (tiempo actual)' }}
+        </button>
 
-            <div class="p-3">
-                <div class="flex items-center gap-3 mb-4">
-                    <span
-                        class="bg-gray-100 text-gray-500 rounded-full w-6 h-6 flex items-center justify-center text-[12px] font-bold">3</span>
-                    <h2 class="font-bold text-[14px] text-gray-500">Ir a Coordenada UTM</h2>
-                </div>
+        <div *ngIf="matrizGenerada" class="text-center text-[11px] text-[#16a34a] font-bold mt-2">
+          ✓ Ruta calibrada con {{ postesCalibradosCount }} postes procesados.
+        </div>
+      </div>
 
-                <div class="grid grid-cols-2 gap-3 mb-4">
-                    <div>
-                        <label class="block text-[10px] text-gray-400 mb-1">Zona</label>
-                        <input type="text" value="18" disabled
-                            class="w-full border border-gray-200 rounded p-1.5 text-[11px] bg-gray-50 text-gray-500 font-medium text-center">
-                    </div>
-                    <div>
-                        <label class="block text-[10px] text-gray-400 mb-1">Hemisferio</label>
-                        <input type="text" value="Sur (S)" disabled
-                            class="w-full border border-gray-200 rounded p-1.5 text-[11px] bg-gray-50 text-gray-500 font-medium text-center">
-                    </div>
-                </div>
+      <div class="p-3">
+        <div class="flex items-center gap-3 mb-4">
+          <span
+            class="bg-gray-100 text-gray-500 rounded-full w-6 h-6 flex items-center justify-center text-[12px] font-bold">3</span>
+          <h2 class="font-bold text-[14px] text-gray-500">Ir a Coordenada UTM</h2>
+        </div>
 
-                <div class="mb-3 relative">
-                    <label class="block text-[10px] text-gray-400 mb-1">Este (X)</label>
-                    <input type="text" [(ngModel)]="inputEste" placeholder="Ej: 587429.24"
-                        class="w-full border border-gray-200 rounded p-2 text-[11px] outline-none focus:border-blue-500 font-mono text-gray-600 bg-white">
-                    <span class="absolute right-3 top-7 text-[9px] text-gray-400 font-mono">m E</span>
-                </div>
+        <div class="grid grid-cols-2 gap-3 mb-4">
+          <div>
+            <label class="block text-[10px] text-gray-400 mb-1">Zona</label>
+            <input type="text" value="18" disabled
+              class="w-full border border-gray-200 rounded p-1.5 text-[11px] bg-gray-50 text-gray-500 font-medium text-center">
+          </div>
+          <div>
+            <label class="block text-[10px] text-gray-400 mb-1">Hemisferio</label>
+            <input type="text" value="Sur (S)" disabled
+              class="w-full border border-gray-200 rounded p-1.5 text-[11px] bg-gray-50 text-gray-500 font-medium text-center">
+          </div>
+        </div>
 
-                <div class="mb-5 relative">
-                    <label class="block text-[10px] text-gray-400 mb-1">Norte (Y)</label>
-                    <input type="text" [(ngModel)]="inputNorte" placeholder="Ej: 8504165.57"
-                        class="w-full border border-gray-200 rounded p-2 text-[11px] outline-none focus:border-blue-500 font-mono text-gray-600 bg-white">
-                    <span class="absolute right-3 top-7 text-[9px] text-gray-400 font-mono">m S</span>
-                </div>
+        <div class="mb-3 relative">
+          <label class="block text-[10px] text-gray-400 mb-1">Este (X)</label>
+          <input type="text" [(ngModel)]="inputEste" placeholder="Ej: 587429.24"
+            class="w-full border border-gray-200 rounded p-2 text-[11px] outline-none focus:border-blue-500 font-mono text-gray-600 bg-white">
+          <span class="absolute right-3 top-7 text-[9px] text-gray-400 font-mono">m E</span>
+        </div>
 
-                <button (click)="visualizar360()" [disabled]="!inputEste || !inputNorte"
-                    class="w-full text-white font-bold text-[13px] py-2.5 rounded shadow-sm transition-all flex items-center justify-center gap-2"
-                    [ngClass]="inputEste && inputNorte ? 'bg-[#3b82f6] hover:bg-blue-600 cursor-pointer' : 'bg-[#93c5fd] cursor-not-allowed'">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                    </svg>
-                    Visualizar en 360°
-                </button>
-            </div>
-        </p-tabPanel>
-        <p-tabPanel header="Exportar">
-            <div class="p-3 border-b border-gray-100">
-                <div class="grid grid-cols-2 gap-2">
-                    <!--<button (click)="exportarGpx()" [disabled]="!ejeFile || exportandoGpx"
+        <div class="mb-5 relative">
+          <label class="block text-[10px] text-gray-400 mb-1">Norte (Y)</label>
+          <input type="text" [(ngModel)]="inputNorte" placeholder="Ej: 8504165.57"
+            class="w-full border border-gray-200 rounded p-2 text-[11px] outline-none focus:border-blue-500 font-mono text-gray-600 bg-white">
+          <span class="absolute right-3 top-7 text-[9px] text-gray-400 font-mono">m S</span>
+        </div>
+
+        <button (click)="visualizar360()" [disabled]="!inputEste || !inputNorte"
+          class="w-full text-white font-bold text-[13px] py-2.5 rounded shadow-sm transition-all flex items-center justify-center gap-2"
+          [ngClass]="inputEste && inputNorte ? 'bg-[#3b82f6] hover:bg-blue-600 cursor-pointer' : 'bg-[#93c5fd] cursor-not-allowed'">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+          </svg>
+          Visualizar en 360°
+        </button>
+      </div>
+    </p-tabPanel>
+    <p-tabPanel header="Exportar">
+      <div class="p-3 border-b border-gray-100">
+        <div class="grid grid-cols-2 gap-2">
+          <!--<button (click)="exportarGpx()" [disabled]="!ejeFile || exportandoGpx"
                         class="w-full text-white font-bold text-[12px] py-2 rounded shadow transition-all"
                         [ngClass]="!ejeFile || exportandoGpx ? 'bg-[#93c5fd] cursor-not-allowed' : 'bg-[#2563eb] hover:bg-blue-700 cursor-pointer'">
                         {{ exportandoGpx ? 'Exportando...' : 'Exportar GPX' }}
                     </button>-->
-                    <button (click)="exportarCsvPostes()" [disabled]="postesList.length === 0 || exportandoCsv"
-                        class="w-full text-white font-bold text-[12px] py-2 rounded shadow transition-all"
-                        [ngClass]="postesList.length === 0 || exportandoCsv ? 'bg-[#86efac] cursor-not-allowed' : 'bg-[#16a34a] hover:bg-green-700 cursor-pointer'">
-                        {{ exportandoCsv ? 'Exportando...' : 'Exportar CSV' }}
-                    </button>
-                </div>
-            </div>
+          <button (click)="exportarCsvPostes()" [disabled]="postesList.length === 0 || exportandoCsv"
+            class="w-full text-white font-bold text-[12px] py-2 rounded shadow transition-all"
+            [ngClass]="postesList.length === 0 || exportandoCsv ? 'bg-[#86efac] cursor-not-allowed' : 'bg-[#16a34a] hover:bg-green-700 cursor-pointer'">
+            {{ exportandoCsv ? 'Exportando...' : 'Exportar CSV' }}
+          </button>
+        </div>
+      </div>
 
-            <div class="flex flex-col items-center gap-3 mb-4">
-                <h2 class="font-bold text-[14px] text-gray-800">Ruta generada (preview)</h2>
-                <p-table [value]="rutaGenerada" class="w-full text-sm rounded-xl" responsiveLayout="scroll">
-                    <ng-template pTemplate="header">
-                        <tr class="bg-gray-100">
-                            <th class="text-left px-3 py-2">Latitud</th>
-                            <th class="text-left px-3 py-2">Longitud</th>
-                            <th class="text-left px-3 py-2">Tiempo (s)</th>
-                        </tr>
-                    </ng-template>
+      <div class="flex flex-col items-center gap-3 mb-4">
+        <h2 class="font-bold text-[14px] text-gray-800">Ruta generada (preview)</h2>
+        <p-table [value]="rutaGenerada" class="w-full text-sm rounded-xl" responsiveLayout="scroll">
+          <ng-template pTemplate="header">
+            <tr class="bg-gray-100">
+              <th class="text-left px-3 py-2">Latitud</th>
+              <th class="text-left px-3 py-2">Longitud</th>
+              <th class="text-left px-3 py-2">Tiempo (s)</th>
+            </tr>
+          </ng-template>
 
-                    <ng-template pTemplate="body" let-punto>
-                        <tr class="border-t hover:bg-gray-50">
-                            <td class="px-3 py-2">{{ punto.lat }}</td>
-                            <td class="px-3 py-2">{{ punto.lng }}</td>
-                            <td class="px-3 py-2">{{ punto.tiempo_video_s }}</td>
-                        </tr>
-                    </ng-template>
-                </p-table>
-            </div>
+          <ng-template pTemplate="body" let-punto>
+            <tr class="border-t hover:bg-gray-50">
+              <td class="px-3 py-2">{{ punto.lat }}</td>
+              <td class="px-3 py-2">{{ punto.lng }}</td>
+              <td class="px-3 py-2">{{ punto.tiempo_video_s }}</td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </div>
 
-            <div class="flex flex-col items-center gap-3 mb-4">
-                <h2 class="font-bold text-[14px] text-gray-800">Tramos (distancia / velocidad)</h2>
-                <p-table [value]="tramosRuta" class="mt-4">
-                    <ng-template pTemplate="header">
-                        <tr>
-                            <th>Tramo</th>
-                            <th>Distancia (m)</th>
-                            <th>Velocidad (m/s)</th>
-                        </tr>
-                    </ng-template>
+      <div class="flex flex-col items-center gap-3 mb-4">
+        <h2 class="font-bold text-[14px] text-gray-800">Tramos (distancia / velocidad)</h2>
+        <p-table [value]="tramosRuta" class="mt-4">
+          <ng-template pTemplate="header">
+            <tr>
+              <th>Tramo</th>
+              <th>Distancia (m)</th>
+              <th>Velocidad (m/s)</th>
+            </tr>
+          </ng-template>
 
-                    <ng-template pTemplate="body" let-r>
-                        <tr>
-                            <td>{{ r.tramo }}</td>
-                            <td>{{ r.distancia_m }}</td>
-                            <td>{{ r.velocidad_m_s }}</td>
-                        </tr>
-                    </ng-template>
-                </p-table>
-            </div>
-        </p-tabPanel>
-    </p-tabView>
+          <ng-template pTemplate="body" let-r>
+            <tr>
+              <td>{{ r.tramo }}</td>
+              <td>{{ r.distancia_m }}</td>
+              <td>{{ r.velocidad_m_s }}</td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </div>
+    </p-tabPanel>
+  </p-tabView>
 
 </div>
