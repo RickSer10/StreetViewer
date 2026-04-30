@@ -121,9 +121,7 @@ if (this.blobUrl) URL.revokeObjectURL(this.blobUrl);
 
   dibujarMatrizEnMapa(data: MatrizGeneradaData) {
   if (this.mapaComponent) {
-    this.mapaComponent.dibujarPostesCalibrados(data.postes as any);
-    this.mapaComponent.setRutaVideo(data.ruta as any, data.postes as any);
-    this.mapaComponent.actualizarPunteroPorVideo(parseFloat(this.tiempoActual));
+    this.mapaComponent.dibujarPostesCalibrados(data.postes as any, true);
     this.mapaComponent.centrarEnRuta(); // ← NUEVA llamada
   }
     if (this.sidebarComponent && this.mapaComponent) {
@@ -133,7 +131,8 @@ if (this.blobUrl) URL.revokeObjectURL(this.blobUrl);
   }
 
   onCalibracionChanged(postes: any[]) {
-    this.mapaComponent?.dibujarPostesCalibrados(postes);
+    const soloCalibrados = this.sidebarComponent?.matrizGenerada ?? false;
+    this.mapaComponent?.dibujarPostesCalibrados(postes, soloCalibrados);
   }
 
   saltoVideoYMapa(data: { x: string, y: string }) {

@@ -162,11 +162,40 @@ export class MapaComponent implements OnInit, AfterViewInit {
     ruta: Array<{ index?: number; lat: number; lng: number; tiempo_video_s: number }>,
     postesCalibrados?: Array<{ x: string | number; y: string | number; time: string | number }>
   ) {
-// Tomamos la ruta de la API y confiamos ciegamente en el tiempo asignado a cada coordenada
-    let base = (ruta ?? [])
-      .map((p) => ({ lat: p.lat, lng: p.lng, t: Number(p.tiempo_video_s) }))
-      .filter((p) => Number.isFinite(p.t))
-      .sort((a, b) => a.t - b.t); // Ordenamos estrictamente por el tiempo del video
+    const raw = (ruta ?? [])
+      .map((p, order) => ({
+        lat: Number(p.lat),
+        lng: Number(p.lng),
+        t: Number(p.tiempo_video_s),
+        index: Number.isFinite(Number(p.index)) ? Number(p.index) : NaN,
+        order,
+      }))
+      .filter((p) => Number.isFinite(p.lat) && Number.isFinite(p.lng));
+
+    if (raw.length === 0) {
+      this.rutaVideo = [];
+      this.marcadorVideo?.remove();
+      this.marcadorVideo = null;
+      return;
+    }
+
+    const withTime = raw.filter((p) => Number.isFinite(p.t));
+    const allHaveTime = withTime.length === raw.length;
+    const timeSorted = withTime.slice().sort((a, b) => a.t - b.t);
+    const timeRange = timeSorted.length >= 2 ? timeSorted[timeSorted.length - 1].t - timeSorted[0].t : 0;
+
+    let base: Array<{ lat: number; lng: number; t: number }>;
+    if (allHaveTime && timeSorted.length >= 2 && timeRange > 0) {
+      base = timeSorted.map((p) => ({ lat: p.lat, lng: p.lng, t: p.t }));
+    } else {
+      const ordered = this.ordenarPuntosRuta(raw);
+      const duration = Number.isFinite(this.videoDurationS) && (this.videoDurationS as number) > 0
+        ? (this.videoDurationS as number)
+        : timeRange > 0
+          ? timeRange
+          : 1;
+      base = this.buildRutaPorDistancia(ordered, duration);
+    }
 
     const hint = this.getStartHintLatLng(postesCalibrados);
     if (hint && base.length >= 2) {
@@ -189,9 +218,47 @@ export class MapaComponent implements OnInit, AfterViewInit {
       }
     }
 
+    const duration = this.videoDurationS;
+    if (Number.isFinite(duration) && (duration as number) > 0 && base.length >= 2) {
+      const lastT = base[base.length - 1].t;
+      if (lastT > 0 && lastT < (duration as number) * 0.95) {
+        const scale = (duration as number) / lastT;
+        base = base.map((p) => ({ ...p, t: p.t * scale }));
+      }
+    }
+
     this.rutaVideo = base;
     this.marcadorVideo?.remove();
     this.marcadorVideo = null;
+  }
+
+  private ordenarPuntosRuta(points: Array<{ lat: number; lng: number; index: number; order: number }>) {
+    const hasIndex = points.some((p) => Number.isFinite(p.index));
+    if (!hasIndex) return points.slice().sort((a, b) => a.order - b.order);
+    return points.slice().sort((a, b) => {
+      const ai = Number.isFinite(a.index) ? a.index : a.order;
+      const bi = Number.isFinite(b.index) ? b.index : b.order;
+      return ai - bi;
+    });
+  }
+
+  private buildRutaPorDistancia(points: Array<{ lat: number; lng: number }>, duration: number) {
+    if (points.length === 0) return [];
+    const cum: number[] = [0];
+    let total = 0;
+    for (let i = 1; i < points.length; i++) {
+      const prev = new L.LatLng(points[i - 1].lat, points[i - 1].lng);
+      const curr = new L.LatLng(points[i].lat, points[i].lng);
+      total += prev.distanceTo(curr);
+      cum.push(total);
+    }
+    const denom = total > 0 ? total : 1;
+    const safeDuration = Number.isFinite(duration) && duration > 0 ? duration : 1;
+    return points.map((p, i) => ({
+      lat: p.lat,
+      lng: p.lng,
+      t: (cum[i] / denom) * safeDuration,
+    }));
   }
 
   private getStartHintLatLng(postesCalibrados?: Array<{ x: string | number; y: string | number; time: string | number }>) {
@@ -329,15 +396,18 @@ export class MapaComponent implements OnInit, AfterViewInit {
     }
   }
 
-  dibujarPostesCalibrados(postes: Array<{ id: number; x: string | number; y: string | number; time: string | number }>) {
+  dibujarPostesCalibrados(
+    postes: Array<{ id: number; x: string | number; y: string | number; time: string | number }>,
+    soloCalibrados: boolean = false
+  ) {
     if (!this.lineaRuta || !this.utm) return;
 
     this.capaCalibrados.clearLayers();
 
     const calibrados = postes
       .map((p) => ({ ...p, timeN: Number(p.time), xN: Number(p.x), yN: Number(p.y) }))
-      // 👇 Se quitó la condición "p.timeN > 0" para que salgan sí o sí aunque no estén calibrados aún
-      .filter((p) => Number.isFinite(p.timeN) && Number.isFinite(p.xN) && Number.isFinite(p.yN));
+      .filter((p) => Number.isFinite(p.timeN) && Number.isFinite(p.xN) && Number.isFinite(p.yN))
+      .filter((p) => (soloCalibrados ? p.timeN > 0 : true));
 
     const proyectados = calibrados.map((p) => {
       const [lat, lng] = this.convertUTMToLatLng(p.xN, p.yN);
