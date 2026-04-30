@@ -2,6 +2,7 @@
 
   <app-sidebar class="flex-shrink-0 z-50 shadow-2xl relative"
     [tiempoActual]="tiempoActual"
+    [tiempoActualN]="tiempoActualN"
     (videoSelected)="cargarVideoLocal($event)"
     (kmlSelected)="cargarKmlLocal($event)"
     (matrizGeneradaEvent)="dibujarMatrizEnMapa($event)"
@@ -11,7 +12,7 @@
 
   <div class="flex-1 relative h-full bg-[#0b1120] overflow-hidden flex flex-col">
 
-    <div [class]="mapaPrincipal
+    <div [class]="mapaPrincipal 
         ? 'absolute bottom-6 right-6 w-[360px] h-[240px] z-40 rounded-xl overflow-hidden shadow-[0_10px_40px_rgba(0,0,0,0.5)] transition-all duration-500 bg-[#0b1120] border border-gray-700/50'
         : 'absolute inset-0 w-full h-full z-10 transition-all duration-500 flex flex-col justify-center bg-[#0b1120]'">
 

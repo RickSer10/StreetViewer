@@ -17,6 +17,7 @@ import { MatrizGeneradaData } from './components/panellateral/sidebar.component'
 })
 export class AppComponent implements AfterViewInit, OnDestroy {
   tiempoActual: string = '0.00';
+  tiempoActualN: number = 0;
   mapaPrincipal = false;
   videoListo = false; // <-- Añadimos la bandera
 
@@ -24,6 +25,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   private blobUrl: string | null = null;
 
   @ViewChild(MapaComponent) mapaComponent!: MapaComponent;
+  @ViewChild(SidebarComponent) sidebarComponent!: SidebarComponent;
   @ViewChild('sphereContainer') sphereContainerRef!: ElementRef;
 
   ngAfterViewInit() {
@@ -54,6 +56,13 @@ export class AppComponent implements AfterViewInit, OnDestroy {
           clearInterval(waitForVideo);
           const videoEl: HTMLVideoElement = videoPlugin.video;
 
+          const syncDuration = () => {
+            const d = Number(videoEl.duration);
+            if (Number.isFinite(d) && d > 0) this.mapaComponent?.setVideoDuration(d);
+          };
+          videoEl.addEventListener('loadedmetadata', syncDuration);
+          setTimeout(syncDuration, 250);
+
           // 👇 NUEVO: Forzamos la actualización del puntero apenas el video existe
           setTimeout(() => {
             this.mapaComponent?.actualizarPunteroPorVideo(videoEl.currentTime || 0);
@@ -64,10 +73,13 @@ export class AppComponent implements AfterViewInit, OnDestroy {
 
           videoEl.play();
           videoEl.addEventListener('timeupdate', () => {
+            this.tiempoActualN = videoEl.currentTime;
             this.tiempoActual = videoEl.currentTime.toFixed(2);
             this.mapaComponent?.actualizarPunteroPorVideo(videoEl.currentTime);
           });
           videoEl.addEventListener('seeked', () => {
+            this.tiempoActualN = videoEl.currentTime;
+            this.tiempoActual = videoEl.currentTime.toFixed(2);
             this.mapaComponent?.actualizarPunteroPorVideo(videoEl.currentTime);
           });
         }
@@ -110,29 +122,49 @@ if (this.blobUrl) URL.revokeObjectURL(this.blobUrl);
   }
 
   dibujarMatrizEnMapa(data: MatrizGeneradaData) {
-    if (this.mapaComponent) {
-      this.mapaComponent.dibujarPostesCalibrados(data.postes as any);
-      this.mapaComponent.setRutaVideo(data.ruta as any, data.postes as any);
-      this.mapaComponent.actualizarPunteroPorVideo(parseFloat(this.tiempoActual));
+  if (this.mapaComponent) {
+    this.mapaComponent.dibujarPostesCalibrados(data.postes as any, true);
+    this.mapaComponent.centrarEnRuta(); // ← NUEVA llamada
+  }
+    if (this.sidebarComponent && this.mapaComponent) {
+      const tramos = this.mapaComponent.calcularTramosPorPostes(data.postes as any);
+      this.sidebarComponent.setTramosRuta(tramos);
     }
   }
 
   onCalibracionChanged(postes: any[]) {
-    this.mapaComponent?.dibujarPostesCalibrados(postes);
+    const soloCalibrados = this.sidebarComponent?.matrizGenerada ?? false;
+    this.mapaComponent?.dibujarPostesCalibrados(postes, soloCalibrados);
   }
 
-  saltoVideoYMapa(data: { x: string, y: string, time: number }) {
-    if (this.viewer && data.time > 0) {
-      const videoPlugin = this.viewer.getPlugin(VideoPlugin) as any;
-      const videoEl: HTMLVideoElement = videoPlugin.video;
-      if (videoEl) {
-        videoEl.currentTime = data.time;
-        videoEl.play();
-      }
+  saltoVideoYMapa(data: { x: string, y: string }) {
+    const x = parseFloat(data.x);
+    const y = parseFloat(data.y);
+    const postes = this.sidebarComponent?.getPostesForCalculo?.() ?? [];
+    const calc = this.mapaComponent?.calcularTiempoParaUtm(x, y, postes as any);
+
+    if (!calc) {
+      alert('No se pudo calcular el tiempo. Genera la matriz primero con al menos 2 postes calibrados.');
+      return;
     }
-    if (this.mapaComponent) this.mapaComponent.moverMarcadorSimulado(
-      parseFloat(data.x),
-      parseFloat(data.y)
-    );
+
+    const time = calc.time;
+
+    if (this.mapaComponent) {
+      this.mapaComponent.moverMarcadorSimulado(x, y);
+    }
+
+    if (this.viewer) {
+      const videoPlugin = this.viewer.getPlugin(VideoPlugin) as any;
+      const videoEl: HTMLVideoElement | undefined = videoPlugin?.video;
+      if (videoEl) {
+        videoEl.currentTime = time;
+        videoEl.play().catch(() => {});
+      } else {
+        alert('El video no está listo aún. Espera a que cargue completamente.');
+      }
+    } else {
+      alert('Carga un video 360° para poder visualizar en esta coordenada.');
+    }
   }
 }
