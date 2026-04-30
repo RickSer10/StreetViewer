@@ -89,6 +89,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   cargarVideoLocal(file: File) {
 if (this.blobUrl) URL.revokeObjectURL(this.blobUrl);
     this.blobUrl = URL.createObjectURL(file);
+
     this.videoListo = true; // <-- Indicamos que el video ya se cargó
 
     // Le damos un pequeño respiro a Angular para que quite la clase "hidden"
@@ -96,6 +97,7 @@ if (this.blobUrl) URL.revokeObjectURL(this.blobUrl);
     setTimeout(() => {
       this.initViewer(this.blobUrl!);
     }, 50);
+
   }
 
   cargarKmlLocal(file: File) {

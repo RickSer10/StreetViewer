@@ -43,7 +43,7 @@ export class SidebarComponent implements OnInit {
   postesFileName: string = '';
   puntosProcesados: number = 0;
   activeIndex = 0;
-  
+
 
   postesList: PosteCalibracion[] = [];
   matrizGenerada: boolean = false;
@@ -54,6 +54,7 @@ export class SidebarComponent implements OnInit {
   exportandoGpx = false;
   exportandoCsv = false;
   asistiendoCalibracion = false;
+
   fecha: Date | null = null;
   hora: Date | null = null;
 
