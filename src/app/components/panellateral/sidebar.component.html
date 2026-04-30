@@ -84,6 +84,7 @@
             class="flex items-center gap-2 mb-2 pb-2 border-b border-gray-100 last:border-0 last:mb-0 last:pb-0">
             <span class="text-[11px] font-bold text-gray-500 w-4 text-center">{{ poste.id }}</span>
             <input type="text" [(ngModel)]="poste.time"
+              (ngModelChange)="calibracionChanged.emit(postesList)"
               class="w-[50px] border border-blue-300 rounded text-[11px] text-blue-600 font-bold p-1.5 outline-none text-center bg-white shadow-sm focus:border-blue-500">
             <input type="text" [value]="poste.x" disabled
               class="w-[70px] bg-gray-50 text-[10px] text-gray-400 p-1.5 rounded border border-transparent outline-none text-center">
@@ -91,7 +92,7 @@
               class="w-[70px] bg-gray-50 text-[10px] text-gray-400 p-1.5 rounded border border-transparent outline-none text-center">
             <button (click)="pegarTiempo(poste)"
               class="bg-[#dbeafe] text-[#2563eb] font-bold text-[10px] px-2 py-1.5 rounded hover:bg-blue-200 transition">
-              Pegar T.
+              Usar tiempo actual
             </button>
           </div>
         </div>
@@ -171,6 +172,18 @@
             [ngClass]="postesList.length === 0 || exportandoCsv ? 'bg-[#86efac] cursor-not-allowed' : 'bg-[#16a34a] hover:bg-green-700 cursor-pointer'">
             {{ exportandoCsv ? 'Exportando...' : 'Exportar CSV' }}
           </button>
+        </div>
+      </div>
+
+      <div class="p-3 border-b border-gray-100">
+        <label class="block text-[11px] font-semibold text-gray-500 mb-1">Importar CSV (tiempos calibrados)</label>
+        <input type="file" #fileCsv class="hidden" accept=".csv" (change)="importarCsv($event)">
+        <div class="flex items-center border border-gray-200 rounded overflow-hidden bg-white">
+          <button (click)="fileCsv.click()"
+            class="bg-gray-100 px-3 py-2 text-[11px] text-gray-600 font-bold border-r border-gray-200 hover:bg-gray-200 transition min-w-[120px]">
+            Seleccionar CSV
+          </button>
+          <span class="px-3 py-2 text-[11px] text-gray-500 w-full truncate">{{ csvFileName || '' }}</span>
         </div>
       </div>
 

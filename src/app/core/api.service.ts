@@ -30,6 +30,7 @@ export interface ParsePostesResponse {
 }
 
 export interface PuntoMatriz {
+  index?: number;
   lat: number;
   lng: number;
   tiempo_video_s: number;
@@ -87,9 +88,13 @@ export class ApiService {
     });
   }
 
-  exportarCsvPostes(postes: PostePayload[]): Observable<Blob> {
+  exportarCsvPostes(postes: PostePayload[], videoFecha?: string, videoHora?: string): Observable<Blob> {
     const formData = new FormData();
     formData.append('body', JSON.stringify({ postes }));
+    if (videoFecha && videoHora) {
+      formData.append('video_fecha', videoFecha);
+      formData.append('video_hora', videoHora);
+    }
     return this.http.post(`${this.baseUrl}/exportar/csv-postes`, formData, {
       responseType: 'blob'
     });

@@ -25,6 +25,8 @@ export class MapaComponent implements OnInit, AfterViewInit {
   private marcadorActual: L.Marker | null = null;
   private marcadorVideo: L.Marker | null = null;
   private rutaVideo: Array<{ lat: number; lng: number; t: number }> = [];
+  private ejeLatLngs: L.LatLng[] = [];
+  private videoDurationS: number | null = null;
 
   private utm = "";
   private wgs84 = "+proj=longlat +datum=WGS84 +no_defs";
@@ -53,6 +55,10 @@ export class MapaComponent implements OnInit, AfterViewInit {
   cargarKMLDinamico(kmlText: string): void {
     try {
       this.capaRuta.clearLayers();
+      this.ejeLatLngs = [];
+      this.rutaVideo = [];
+      this.marcadorVideo?.remove();
+      this.marcadorVideo = null;
       this.limpiarMarcadoresLegacy();
       const doc = new DOMParser().parseFromString(kmlText, 'text/xml');
       const coordsTags = doc.getElementsByTagName("coordinates");
@@ -76,18 +82,52 @@ export class MapaComponent implements OnInit, AfterViewInit {
 
       this.detectarZonaUTM(latlngs[0].lng, latlngs[0].lat);
 
+      if (latlngs.length >= 2) {
+        const first = latlngs[0];
+        const last = latlngs[latlngs.length - 1];
+        if (first.lat < last.lat) {
+          latlngs = latlngs.slice().reverse();
+        }
+      }
+
       this.lineaRuta = L.polyline(latlngs, {
         color: '#2563eb',
         weight: 5
       });
 
       this.capaRuta.addLayer(this.lineaRuta);
+      this.ejeLatLngs = latlngs;
+      this.setRutaVideoDesdeEje();
       this.mapa.fitBounds(this.lineaRuta.getBounds());
       console.log("✅ Ruta dibujada correctamente.");
 
     } catch (err) {
       console.error("Error KML Eje:", err);
     }
+  }
+
+  setVideoDuration(durationSeconds: number) {
+    if (!Number.isFinite(durationSeconds) || durationSeconds <= 0) return;
+    this.videoDurationS = durationSeconds;
+    if (this.ejeLatLngs.length >= 2) this.setRutaVideoDesdeEje();
+  }
+
+  private setRutaVideoDesdeEje() {
+    if (!this.ejeLatLngs || this.ejeLatLngs.length < 2) return;
+    const duration = this.videoDurationS ?? 1;
+    const cum: number[] = [0];
+    let total = 0;
+    for (let i = 1; i < this.ejeLatLngs.length; i++) {
+      total += this.ejeLatLngs[i - 1].distanceTo(this.ejeLatLngs[i]);
+      cum.push(total);
+    }
+    const denom = total > 0 ? total : 1;
+    this.rutaVideo = this.ejeLatLngs.map((ll, i) => ({
+      lat: ll.lat,
+      lng: ll.lng,
+      t: (cum[i] / denom) * duration,
+    }));
+    this.actualizarPunteroPorVideo(0);
   }
 
   private limpiarMarcadoresLegacy() {
@@ -107,7 +147,7 @@ export class MapaComponent implements OnInit, AfterViewInit {
         continue;
       }
 
-      if (typeof className === 'string' && (className.includes('car-marker') || className.includes('nav-pointer'))) {
+      if (typeof className === 'string' && (className.includes('car-marker') || className.includes('nav-pointer') || className.includes('video-pointer'))) {
         this.mapa.removeLayer(layer);
         continue;
       }
@@ -119,7 +159,7 @@ export class MapaComponent implements OnInit, AfterViewInit {
   }
 
   setRutaVideo(
-    ruta: Array<{ lat: number; lng: number; tiempo_video_s: number }>,
+    ruta: Array<{ index?: number; lat: number; lng: number; tiempo_video_s: number }>,
     postesCalibrados?: Array<{ x: string | number; y: string | number; time: string | number }>
   ) {
 // Tomamos la ruta de la API y confiamos ciegamente en el tiempo asignado a cada coordenada
@@ -139,6 +179,13 @@ export class MapaComponent implements OnInit, AfterViewInit {
         const tMax = base[base.length - 1].t;
         const mirror = (t: number) => tMin + tMax - t;
         base = base.slice().reverse().map((p) => ({ ...p, t: mirror(p.t) })).sort((a, b) => a.t - b.t);
+      }
+    }
+
+    if (base.length >= 1) {
+      const t0 = base[0].t;
+      if (Number.isFinite(t0) && t0 !== 0) {
+        base = base.map((p) => ({ ...p, t: Math.max(0, p.t - t0) }));
       }
     }
 
@@ -180,6 +227,41 @@ export class MapaComponent implements OnInit, AfterViewInit {
     } else {
       this.marcadorVideo.setLatLng(latlng);
     }
+  }
+
+  calcularTramosPorPostes(postes: Array<{ id: number; x: string | number; y: string | number; time: string | number }>) {
+    if (!this.lineaRuta || !this.utm) return [];
+    const anchors = this.getAnchorsOrdenados(postes);
+    if (anchors.length < 2) return [];
+    const out: Array<{ tramo: string; distancia_m: number; velocidad_m_s: number }> = [];
+    for (let i = 1; i < anchors.length; i++) {
+      const a = anchors[i - 1];
+      const b = anchors[i];
+      const ds = b.s - a.s;
+      const dt = b.t - a.t;
+      const v = dt > 0 ? ds / dt : 0;
+      out.push({
+        tramo: `${i} (${a.id}→${b.id})`,
+        distancia_m: Number(ds.toFixed(2)),
+        velocidad_m_s: Number(v.toFixed(2)),
+      });
+    }
+    return out;
+  }
+
+  calcularTiempoParaUtm(
+    x: number,
+    y: number,
+    postes: Array<{ id: number; x: string | number; y: string | number; time: string | number }>
+  ): { time: number; snapped: { lat: number; lng: number } } | null {
+    if (!this.lineaRuta || !this.utm) return null;
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+    const snapped = this.snapUtmToRoute(x, y);
+    if (!snapped) return null;
+    const anchors = this.getAnchorsOrdenados(postes);
+    if (anchors.length < 2) return null;
+    const t = this.interpolateTimeAtS(snapped.s, anchors);
+    return { time: t, snapped: { lat: snapped.latlng.lat, lng: snapped.latlng.lng } };
   }
 
   private interpolarPorTiempo(t: number): { lat: number; lng: number } | null {
@@ -235,7 +317,10 @@ export class MapaComponent implements OnInit, AfterViewInit {
         color: "#fff",
         weight: 2,
         fillOpacity: 1
-      }).addTo(this.capaPostes).bindPopup(`Poste ${i + 1}`);
+      })
+        .addTo(this.capaPostes)
+        .bindPopup(`Orden #${i + 1} (Poste #${p.id})`)
+        .bindTooltip(`#${i + 1}`, { permanent: false, direction: 'top' });
     });
 
     if (proyectados.length > 0) {
@@ -273,7 +358,7 @@ export class MapaComponent implements OnInit, AfterViewInit {
         .addTo(this.capaCalibrados)
         .bindTooltip(`
           <div style="text-align: center;">
-            <b>#${p.id}</b> | t=${p.timeN.toFixed(2)}s<br>
+            <b>Orden #${idx + 1}</b> (Poste #${p.id}) | t=${p.timeN.toFixed(2)}s<br>
             <span style="font-size: 10px; color: gray;">Lat: ${p.snapped.lat.toFixed(6)}</span><br>
             <span style="font-size: 10px; color: gray;">Lng: ${p.snapped.lng.toFixed(6)}</span>
           </div>
@@ -306,6 +391,61 @@ export class MapaComponent implements OnInit, AfterViewInit {
       }).addTo(this.mapa);
       this.mapa.setView(punto, 17);
     } catch (err) { }
+  }
+
+  private snapUtmToRoute(x: number, y: number): { latlng: L.LatLng; s: number } | null {
+    try {
+      const [lat, lng] = this.convertUTMToLatLng(x, y);
+      let punto = new L.LatLng(lat, lng);
+      if (this.lineaRuta) punto = this.getClosestPointOnLine(punto);
+      const s = this.getDistanceAlongRoute(punto);
+      return { latlng: punto, s };
+    } catch {
+      return null;
+    }
+  }
+
+  private getAnchorsOrdenados(postes: Array<{ id: number; x: string | number; y: string | number; time: string | number }>) {
+    const anchors = postes
+      .map((p) => ({ id: Number(p.id), x: Number(p.x), y: Number(p.y), t: Number(p.time) }))
+      .filter((p) => Number.isFinite(p.id) && Number.isFinite(p.x) && Number.isFinite(p.y) && Number.isFinite(p.t) && p.t > 0);
+
+    const withS = anchors
+      .map((p) => {
+        const snapped = this.snapUtmToRoute(p.x, p.y);
+        if (!snapped) return null;
+        return { id: p.id, s: snapped.s, t: p.t };
+      })
+      .filter(Boolean) as Array<{ id: number; s: number; t: number }>;
+
+    withS.sort((a, b) => a.s - b.s);
+    const dedup: Array<{ id: number; s: number; t: number }> = [];
+    for (const a of withS) {
+      if (!dedup.length || Math.abs(a.s - dedup[dedup.length - 1].s) > 1e-6) dedup.push(a);
+      else dedup[dedup.length - 1] = a;
+    }
+    return dedup;
+  }
+
+  private interpolateTimeAtS(s: number, anchors: Array<{ s: number; t: number }>): number {
+    if (anchors.length === 1) return anchors[0].t;
+    const first = anchors[0];
+    const last = anchors[anchors.length - 1];
+    if (s <= first.s) return first.t;
+    if (s >= last.s) return last.t;
+
+    for (let i = 0; i < anchors.length - 1; i++) {
+      const a = anchors[i];
+      const b = anchors[i + 1];
+      if (s >= a.s && s <= b.s) {
+        const ds = b.s - a.s;
+        const dt = b.t - a.t;
+        if (ds <= 0 || dt <= 0) return a.t;
+        const v = ds / dt;
+        return a.t + (s - a.s) / v;
+      }
+    }
+    return first.t;
   }
 
   private detectarZonaUTM(lon: number, lat: number) {
@@ -354,5 +494,11 @@ export class MapaComponent implements OnInit, AfterViewInit {
       total += segDist;
     }
     return best;
+  }
+
+  centrarEnRuta() {
+    if (this.lineaRuta && this.mapa) {
+      this.mapa.fitBounds(this.lineaRuta.getBounds(), { padding: [40, 40] });
+    }
   }
 }

@@ -32,11 +32,12 @@ export class SidebarComponent implements OnInit {
   private apiService = inject(ApiService);
 
   @Input() tiempoActual: string = '0.00';
+  @Input() tiempoActualN: number = 0;
   @Output() videoSelected = new EventEmitter<File>();
   @Output() kmlSelected = new EventEmitter<File>();
   @Output() matrizGeneradaEvent = new EventEmitter<MatrizGeneradaData>();
   @Output() calibracionChanged = new EventEmitter<Poste[]>();
-  @Output() buscarUtmEvent = new EventEmitter<{ x: string, y: string, time: number }>();
+  @Output() buscarUtmEvent = new EventEmitter<{ x: string, y: string }>();
 
   videoFileName: string = '';
   ejeFileName: string = '';
@@ -56,6 +57,7 @@ export class SidebarComponent implements OnInit {
   asistiendoCalibracion = false;
   fecha: Date | null = null;
   hora: Date | null = null;
+  csvFileName: string = '';
 
   rutaGenerada: PuntoMatriz[] = [];
   tramosRuta: Array<{ tramo: string; distancia_m: number; velocidad_m_s: number }> = [];
@@ -119,7 +121,8 @@ export class SidebarComponent implements OnInit {
   }
 
   pegarTiempo(poste: Poste) {
-    poste.time = this.tiempoActual;
+    const t = Number.isFinite(this.tiempoActualN) ? this.tiempoActualN : Number(this.tiempoActual);
+    poste.time = (Number.isFinite(t) ? t : 0).toFixed(2);
     this.calibracionChanged.emit(this.postesList as any);
   }
 
@@ -200,9 +203,15 @@ export class SidebarComponent implements OnInit {
       return;
     }
 
-    const posteEncontrado = this.postesList.find(p => p.x === this.inputEste && p.y === this.inputNorte);
-    const tiempoSalto = posteEncontrado ? parseFloat(posteEncontrado.time) : 0;
-    this.buscarUtmEvent.emit({ x: x.toString(), y: y.toString(), time: tiempoSalto });
+    this.buscarUtmEvent.emit({ x: x.toString(), y: y.toString() });
+  }
+
+  getPostesForCalculo(): Array<{ id: number; x: string; y: string; time: string }> {
+    return this.postesList.map((p) => ({ id: p.id, x: p.x, y: p.y, time: String(p.time) }));
+  }
+
+  setTramosRuta(tramos: Array<{ tramo: string; distancia_m: number; velocidad_m_s: number }>) {
+    this.tramosRuta = tramos ?? [];
   }
 
   exportarGpx() {
@@ -230,7 +239,9 @@ export class SidebarComponent implements OnInit {
     }
 
     this.exportandoCsv = true;
-    this.apiService.exportarCsvPostes(this.mapPostesToPayload()).subscribe({
+    const videoFecha = this.formatDateYYYYMMDD(this.fecha);
+    const videoHora = this.formatTimeHHMMSS(this.hora);
+    this.apiService.exportarCsvPostes(this.mapPostesToPayload(), videoFecha ?? undefined, videoHora ?? undefined).subscribe({
       next: (blob) => {
         this.descargarBlob('postes_calibrados.csv', blob);
         this.exportandoCsv = false;
@@ -240,6 +251,111 @@ export class SidebarComponent implements OnInit {
         alert(this.getApiErrorMessage(err, 'No se pudo exportar CSV de postes desde la API.'));
       }
     });
+  }
+
+  importarCsv(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
+    const file = input.files[0];
+    this.csvFileName = file.name;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const text = String(reader.result ?? '');
+      try {
+        this.aplicarCsvATiempos(text);
+        this.calibracionChanged.emit(this.postesList as any);
+        const actualizados = this.postesList.filter(p => Number(p.time) > 0).length;
+        alert(`CSV importado correctamente. ${actualizados} postes con tiempo asignado.`);
+      } catch (e: any) {
+        alert(e?.message || 'No se pudo importar el CSV.');
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  private aplicarCsvATiempos(csvText: string) {
+    const lines = csvText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    if (lines.length < 2) throw new Error('CSV vacío o inválido.');
+
+    const header = this.parseCsvLine(lines[0]).map(h => h.trim().toLowerCase());
+    const idxLat = header.indexOf('latitud');
+    const idxLng = header.indexOf('longitud');
+    const idxTiempo = header.indexOf('tiempo');
+    const idxTrack = header.indexOf('track');
+    if (idxTiempo < 0 || idxTrack < 0) throw new Error('CSV inválido: faltan columnas Tiempo y/o track.');
+
+    const base = this.getBaseDateTimeForCsv(lines, idxTiempo);
+    const byId = new Map<number, PosteCalibracion>();
+    this.postesList.forEach(p => byId.set(Number(p.id), p));
+
+    for (let i = 1; i < lines.length; i++) {
+      const cols = this.parseCsvLine(lines[i]);
+      if (cols.length <= Math.max(idxTiempo, idxTrack)) continue;
+      const trackRaw = cols[idxTrack];
+      const id = Number(trackRaw);
+      if (!Number.isFinite(id)) continue;
+      const iso = cols[idxTiempo];
+      const dt = new Date(iso);
+      if (!Number.isFinite(dt.getTime())) continue;
+      const seconds = (dt.getTime() - base.getTime()) / 1000;
+      const poste = byId.get(id);
+      if (poste) poste.time = (Number.isFinite(seconds) ? seconds : 0).toFixed(2);
+    }
+
+    const touched = this.postesList.some(p => Number(p.time) > 0);
+    if (!touched) throw new Error('No se aplicaron tiempos (track no coincide con IDs o fechas inválidas).');
+  }
+
+  private getBaseDateTimeForCsv(lines: string[], idxTiempo: number): Date {
+    const fromUi = this.getVideoBaseDateTimeFromUi();
+    if (fromUi) return fromUi;
+    for (let i = 1; i < lines.length; i++) {
+      const cols = this.parseCsvLine(lines[i]);
+      const iso = cols[idxTiempo];
+      const dt = new Date(iso);
+      if (Number.isFinite(dt.getTime())) return dt;
+    }
+    return new Date(0);
+  }
+
+  private getVideoBaseDateTimeFromUi(): Date | null {
+    if (!this.fecha || !this.hora) return null;
+    const base = new Date(
+      this.fecha.getFullYear(),
+      this.fecha.getMonth(),
+      this.fecha.getDate(),
+      this.hora.getHours(),
+      this.hora.getMinutes(),
+      this.hora.getSeconds(),
+      0
+    );
+    return base;
+  }
+
+  private parseCsvLine(line: string): string[] {
+    const out: string[] = [];
+    let cur = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '"') {
+        if (inQuotes && line[i + 1] === '"') {
+          cur += '"';
+          i++;
+          continue;
+        }
+        inQuotes = !inQuotes;
+        continue;
+      }
+      if (ch === ',' && !inQuotes) {
+        out.push(cur);
+        cur = '';
+        continue;
+      }
+      cur += ch;
+    }
+    out.push(cur);
+    return out;
   }
 
   private calcularTramosDesdeRuta(ruta: PuntoMatriz[]) {
@@ -307,5 +423,21 @@ export class SidebarComponent implements OnInit {
       }
     }
     return fallback;
+  }
+
+  private formatDateYYYYMMDD(d: Date | null): string | null {
+    if (!d) return null;
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  }
+
+  private formatTimeHHMMSS(d: Date | null): string | null {
+    if (!d) return null;
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mi = String(d.getMinutes()).padStart(2, '0');
+    const ss = String(d.getSeconds()).padStart(2, '0');
+    return `${hh}:${mi}:${ss}`;
   }
 }
