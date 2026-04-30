@@ -18,13 +18,13 @@
         <div class="mb-4">
           <label class="block text-[11px] font-bold text-gray-600 mb-1">Fecha y hora de la realización del video</label>
           <div class="grid grid-cols-2 gap-2">
-            <p-calendar [(ngModel)]="fecha" dateFormat="dd/mm/yy" [showIcon]="true" placeholder="dd/mm/aaaa"
-              styleClass="w-full text-[11px]">
-            </p-calendar>
 
-            <p-calendar [(ngModel)]="hora" [showTime]="true" [timeOnly]="true" hourFormat="24" [showIcon]="true"
-              icon="pi pi-clock" placeholder="--:--" styleClass="w-full text-[11px]">
-            </p-calendar>
+            <div class="flex flex-row gap-3 m-2">
+              <input type="date" [(ngModel)]="fecha"
+                class="text-xs py-1 px-2 h-10 w-36 rounded border border-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+              <input type="time" [(ngModel)]="hora"
+                class="text-xs py-1 px-2 h-10 w-20 rounded border border-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+            </div>
           </div>
         </div>
 
@@ -63,7 +63,8 @@
 
         <div class="border border-gray-200 bg-[#f8fafc] p-3 rounded-md mb-4">
           <label class="block text-[11px] font-bold text-gray-600 mb-1">Cargar Postes de Referencia (.kml)</label>
-          <p class="text-[10px] text-gray-500 mb-3 leading-tight">El sistema filtrará los postes cercanos y los proyectará al eje de la vía automáticamente.</p>
+          <p class="text-[10px] text-gray-500 mb-3 leading-tight">El sistema filtrará los postes cercanos y los
+            proyectará al eje de la vía automáticamente.</p>
 
           <input type="file" #filePostes class="hidden" accept=".kml" (change)="onFileChange($event, 'postes')">
           <div class="flex items-center border border-gray-200 rounded overflow-hidden bg-white">
@@ -80,8 +81,7 @@
           <div *ngFor="let poste of postesList"
             class="flex items-center gap-2 mb-2 pb-2 border-b border-gray-100 last:border-0 last:mb-0 last:pb-0">
             <span class="text-[11px] font-bold text-gray-500 w-4 text-center">{{ poste.id }}</span>
-            <input type="text" [(ngModel)]="poste.time"
-              (ngModelChange)="calibracionChanged.emit(postesList)"
+            <input type="text" [(ngModel)]="poste.time" (ngModelChange)="calibracionChanged.emit(postesList)"
               class="w-[50px] border border-blue-300 rounded text-[11px] text-blue-600 font-bold p-1.5 outline-none text-center bg-white shadow-sm focus:border-blue-500">
             <input type="text" [value]="poste.x" disabled
               class="w-[70px] bg-gray-50 text-[10px] text-gray-400 p-1.5 rounded border border-transparent outline-none text-center">
@@ -160,6 +160,11 @@
     <p-tabPanel header="Exportar">
       <div class="p-3 border-b border-gray-100">
         <div class="grid grid-cols-2 gap-2">
+          <button (click)="exportarGpx()" [disabled]="!ejeFile || exportandoGpx"
+            class="w-full text-white font-bold text-[12px] py-2 rounded shadow transition-all"
+            [ngClass]="!ejeFile || exportandoGpx ? 'bg-[#93c5fd] cursor-not-allowed' : 'bg-[#2563eb] hover:bg-blue-700 cursor-pointer'">
+            {{ exportandoGpx ? 'Exportando...' : 'Exportar GPX' }}
+          </button>
           <button (click)="exportarCsvPostes()" [disabled]="postesList.length === 0 || exportandoCsv"
             class="w-full text-white font-bold text-[12px] py-2 rounded shadow transition-all"
             [ngClass]="postesList.length === 0 || exportandoCsv ? 'bg-[#86efac] cursor-not-allowed' : 'bg-[#16a34a] hover:bg-green-700 cursor-pointer'">

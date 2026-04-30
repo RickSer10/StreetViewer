@@ -23,7 +23,7 @@ interface PosteCalibracion extends Poste {
 @Component({
   selector: 'app-sidebar',
   standalone: true,
-  imports: [CommonModule, FormsModule, TabViewModule, TableModule, ButtonModule,CalendarModule],
+  imports: [CommonModule, FormsModule, TabViewModule, TableModule, ButtonModule, CalendarModule],
   templateUrl: './sidebar.component.html'
 })
 export class SidebarComponent implements OnInit {
@@ -56,8 +56,8 @@ export class SidebarComponent implements OnInit {
   exportandoCsv = false;
   asistiendoCalibracion = false;
 
-  fecha: Date | null = null;
-  hora: Date | null = null;
+  fecha: string = '';
+  hora: string = '';
   csvFileName: string = '';
 
   rutaGenerada: PuntoMatriz[] = [];
@@ -240,8 +240,9 @@ export class SidebarComponent implements OnInit {
     }
 
     this.exportandoCsv = true;
-    const videoFecha = this.formatDateYYYYMMDD(this.fecha);
-    const videoHora = this.formatTimeHHMMSS(this.hora);
+    const videoFecha = this.fecha || undefined;
+    const videoHora = this.hora || undefined;
+    console.log(this.fecha + '' + this.hora)
     this.apiService.exportarCsvPostes(this.mapPostesToPayload(), videoFecha ?? undefined, videoHora ?? undefined).subscribe({
       next: (blob) => {
         this.descargarBlob('postes_calibrados.csv', blob);
@@ -318,7 +319,7 @@ export class SidebarComponent implements OnInit {
     }
     return new Date(0);
   }
-
+  /*
   private getVideoBaseDateTimeFromUi(): Date | null {
     if (!this.fecha || !this.hora) return null;
     const base = new Date(
@@ -331,7 +332,13 @@ export class SidebarComponent implements OnInit {
       0
     );
     return base;
-  }
+  }*/
+
+    private getVideoBaseDateTimeFromUi(): Date | null {
+  if (!this.fecha || !this.hora) return null;
+  const base = new Date(`${this.fecha}T${this.hora}:00`);
+  return Number.isFinite(base.getTime()) ? base : null;
+}
 
   private parseCsvLine(line: string): string[] {
     const out: string[] = [];
@@ -426,19 +433,20 @@ export class SidebarComponent implements OnInit {
     return fallback;
   }
 
-  private formatDateYYYYMMDD(d: Date | null): string | null {
+  /*private formatDateYYYYMMDD(d: Date | null): string | null {
     if (!d) return null;
     const yyyy = d.getFullYear();
     const mm = String(d.getMonth() + 1).padStart(2, '0');
     const dd = String(d.getDate()).padStart(2, '0');
     return `${yyyy}-${mm}-${dd}`;
+    
   }
-
   private formatTimeHHMMSS(d: Date | null): string | null {
+    
     if (!d) return null;
     const hh = String(d.getHours()).padStart(2, '0');
     const mi = String(d.getMinutes()).padStart(2, '0');
     const ss = String(d.getSeconds()).padStart(2, '0');
     return `${hh}:${mi}:${ss}`;
-  }
+  }*/
 }
