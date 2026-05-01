@@ -108,8 +108,6 @@ export class SidebarComponent implements OnInit {
               lng: p.wgs84?.lng
             }));
             console.log(`Postes procesados desde API: ${this.postesList.length}`);
-
-            // 👇 NUEVA LÍNEA: Fuerza al mapa a dibujarlos de inmediato
             this.calibracionChanged.emit(this.postesList as any);
           },
           error: (err) => {
@@ -132,6 +130,8 @@ export class SidebarComponent implements OnInit {
       alert('Primero carga la ruta eje de via (.kml).');
       return;
     }
+
+    // Contamos solo los calibrados para la validación visual
     const postesCalibrados = this.postesList.filter((p) => Number(p.time) > 0);
     if (postesCalibrados.length < 2) {
       alert('Debes calibrar al menos 2 postes con tiempo mayor a 0 para generar la matriz.');
@@ -139,6 +139,8 @@ export class SidebarComponent implements OnInit {
     }
 
     this.postesCalibradosCount = postesCalibrados.length;
+
+    // Pero le enviamos TODOS los postes a la API (usando mapPostesToPayload)
     this.apiService.generarMatriz(this.mapPostesToPayload(), this.ejeFile).subscribe({
       next: (res) => {
         this.matrizGenerada = true;
@@ -198,7 +200,6 @@ export class SidebarComponent implements OnInit {
       alert('Ingresa coordenadas UTM numericas validas.');
       return;
     }
-    // Rango aproximado UTM zona 18S (EPSG:32718)
     if (x < 160000 || x > 840000 || y < 0 || y > 10000000) {
       alert('Coordenadas fuera de rango UTM 18S. Revisa Este/Norte.');
       return;
@@ -242,7 +243,7 @@ export class SidebarComponent implements OnInit {
     this.exportandoCsv = true;
     const videoFecha = this.fecha || undefined;
     const videoHora = this.hora || undefined;
-    console.log(this.fecha + '' + this.hora)
+
     this.apiService.exportarCsvPostes(this.mapPostesToPayload(), videoFecha ?? undefined, videoHora ?? undefined).subscribe({
       next: (blob) => {
         this.descargarBlob('postes_calibrados.csv', blob);
@@ -319,26 +320,12 @@ export class SidebarComponent implements OnInit {
     }
     return new Date(0);
   }
-  /*
+
   private getVideoBaseDateTimeFromUi(): Date | null {
     if (!this.fecha || !this.hora) return null;
-    const base = new Date(
-      this.fecha.getFullYear(),
-      this.fecha.getMonth(),
-      this.fecha.getDate(),
-      this.hora.getHours(),
-      this.hora.getMinutes(),
-      this.hora.getSeconds(),
-      0
-    );
-    return base;
-  }*/
-
-    private getVideoBaseDateTimeFromUi(): Date | null {
-  if (!this.fecha || !this.hora) return null;
-  const base = new Date(`${this.fecha}T${this.hora}:00`);
-  return Number.isFinite(base.getTime()) ? base : null;
-}
+    const base = new Date(`${this.fecha}T${this.hora}:00`);
+    return Number.isFinite(base.getTime()) ? base : null;
+  }
 
   private parseCsvLine(line: string): string[] {
     const out: string[] = [];
@@ -398,14 +385,36 @@ export class SidebarComponent implements OnInit {
     return R * c;
   }
 
+  // 👇 MÉTODO CORREGIDO: Soluciona el zigzag y MANTIENE la línea azul 👇
   private mapPostesToPayload(): PostePayload[] {
-    return this.postesList.map((p) => ({
-      id: p.id,
-      x: Number(p.x),
-      y: Number(p.y),
-      time: Number(p.time) || 0,
-      descripcion: null
-    }));
+    // 1. Obtenemos TODOS los tiempos ingresados que sean mayores a 0 y los ordenamos de menor a mayor
+    const tiemposOrdenados = this.postesList
+      .map(p => Number(p.time))
+      .filter(t => t > 0)
+      .sort((a, b) => a - b);
+
+    let timeIndex = 0;
+
+    // 2. Mapeamos TODA la lista original (sin eliminar los de tiempo 0)
+    // Esto asegura que la API reciba toda la geometría para poder dibujar la línea azul
+    return this.postesList.map((p) => {
+      let t = Number(p.time) || 0;
+
+      // Si el poste tiene un tiempo asignado, lo reemplazamos por el tiempo ordenado
+      // Así evitamos el zigzag si retrocediste el video
+      if (t > 0) {
+        t = tiemposOrdenados[timeIndex];
+        timeIndex++;
+      }
+
+      return {
+        id: p.id,
+        x: Number(p.x),
+        y: Number(p.y),
+        time: t,
+        descripcion: null
+      };
+    });
   }
 
   private descargarBlob(nombre: string, blob: Blob) {
@@ -432,21 +441,4 @@ export class SidebarComponent implements OnInit {
     }
     return fallback;
   }
-
-  /*private formatDateYYYYMMDD(d: Date | null): string | null {
-    if (!d) return null;
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const dd = String(d.getDate()).padStart(2, '0');
-    return `${yyyy}-${mm}-${dd}`;
-    
-  }
-  private formatTimeHHMMSS(d: Date | null): string | null {
-    
-    if (!d) return null;
-    const hh = String(d.getHours()).padStart(2, '0');
-    const mi = String(d.getMinutes()).padStart(2, '0');
-    const ss = String(d.getSeconds()).padStart(2, '0');
-    return `${hh}:${mi}:${ss}`;
-  }*/
 }
